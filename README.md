@@ -1,14 +1,14 @@
 # Tokenized Fund on AWS with Chainlink CRE
 
-A demonstration of integrating AWS serverless infrastructure with the Chainlink Runtime Environment (CRE) to power a tokenized fund protocol. Users deposit USDC as collateral to mint tokens that track the price of an S&P 500 ETF (sSPY), with real-time pricing sourced from public stock APIs.
-
-Here, **synthetic** means the sSPY token tracks the *price* of the S&P 500 via an on-chain oracle rather than being backed by actual shares. The fund's value is replicated with USDC collateral instead of holding the underlying basket.
-
 **Authored by: Simon Goldberg and David Dornseifer**
 
 > This sample is part of the
 > [AWS Digital Asset Samples](https://aws-samples.github.io/aws-digital-asset-samples/)
 > collection.
+
+A demonstration of integrating AWS serverless infrastructure with the Chainlink Runtime Environment (CRE) to power a tokenized fund protocol. Users deposit USDC as collateral to mint tokens that track the price of an S&P 500 ETF (sSPY), with real-time pricing sourced from public stock APIs.
+
+Here, **synthetic** means the sSPY token tracks the *price* of the S&P 500 via an on-chain oracle rather than being backed by actual shares. The fund's value is replicated with USDC collateral instead of holding the underlying basket.
 
 ## Contents
 
