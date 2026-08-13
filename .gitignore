@@ -1,0 +1,58 @@
+# Environment files
+.env
+.env.*
+*.env.local
+
+# Foundry build artifacts
+**/out/
+**/cache/
+**/broadcast/
+
+# Go/WASM
+*.wasm
+tmp.wasm
+*.exe
+*.dll
+*.so
+*.dylib
+go.work
+
+# Node
+node_modules/
+dist/
+
+# Python
+__pycache__/
+*.pyc
+
+# SAM build
+.aws-sam/
+
+# Coverage
+lcov.info
+coverage/
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+*.tmp
+*.bak
+tmp/
+temp/
+
+# Generated / deployment-specific
+deployed-addresses.json
+oracle-addresses.json
+sample-cre-pricefeeds-por/aws-oracle-cre/api-oracle/config.staging.json

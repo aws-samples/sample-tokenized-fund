@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sSPY - Synthetic S&P 500 Protocol</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+    <style>
+        :root {
+            --bg: #0a0e1a;
+            --surface: #121829;
+            --surface-2: #1a2236;
+            --border: #2a3450;
+            --text: #e2e8f0;
+            --text-muted: #8892a8;
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --green: #10b981;
+            --green-glow: rgba(16, 185, 129, 0.2);
+            --orange: #f59e0b;
+            --red: #ef4444;
+            --blue: #3b82f6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 12px;
+        }
+
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .logo-text span { color: var(--accent); }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .network-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.75rem;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .network-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--red);
+        }
+
+        .network-dot.connected { background: var(--green); animation: pulse 2s infinite; }
+
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        .connect-btn {
+            padding: 0.5rem 1.25rem;
+            background: var(--accent);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .connect-btn:hover { background: #5558e6; box-shadow: 0 0 20px var(--accent-glow); }
+        .connect-btn.connected { background: var(--surface-2); border: 1px solid var(--border); }
+
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            padding: 1.5rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .full-width { grid-column: 1 / -1; }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+        }
+
+        .card-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .card-badge {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .badge-green { background: var(--green-glow); color: var(--green); }
+        .badge-red { background: rgba(239, 68, 68, 0.15); color: var(--red); }
+        .badge-orange { background: rgba(245, 158, 11, 0.15); color: var(--orange); }
+
+        .price-display {
+            display: flex;
+            align-items: baseline;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .price-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .price-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: var(--surface-2);
+            border-radius: 8px;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        /* Flow */
+        .flow-container {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+        }
+
+        .flow-stage {
+            flex: 1;
+            padding: 1.25rem;
+            background: var(--surface-2);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .flow-stage.active { border-color: var(--accent); box-shadow: 0 0 15px var(--accent-glow); }
+
+        .flow-stage-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .flow-stage-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .flow-stage-detail { font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; }
+
+        .flow-arrow {
+            display: flex;
+            align-items: center;
+            padding: 0 0.5rem;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+        }
+
+        .flow-arrow.active { color: var(--accent); }
+
+        /* Tabs */
+        .mint-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 1.5rem;
+            background: var(--surface-2);
+            border-radius: 8px;
+            padding: 4px;
+        }
+
+        .mint-tab {
+            flex: 1;
+            padding: 0.6rem;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-muted);
+        }
+
+        .mint-tab.active { background: var(--accent); color: white; }
+
+        .mint-input-group { margin-bottom: 1rem; }
+
+        .mint-input-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .mint-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .mint-input-wrapper:focus-within { border-color: var(--accent); }
+
+        .mint-input {
+            flex: 1;
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 1.1rem;
+            font-weight: 600;
+            outline: none;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .mint-input::placeholder { color: var(--text-muted); font-weight: 400; }
+
+        .mint-token-tag {
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.3rem 0.6rem;
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        .max-btn {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.2rem 0.4rem;
+            background: var(--accent-glow);
+            color: var(--accent);
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-right: 0.5rem;
+        }
+
+        .refresh-btn {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-muted);
+            padding: 0.3rem 0.5rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            line-height: 1;
+        }
+
+        .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .refresh-btn.spinning { animation: spin 0.8s linear infinite; }
+
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        .mint-info {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.8rem;
+        }
+
+        .mint-info-label { color: var(--text-muted); }
+        .mint-info-value { font-weight: 600; }
+
+        .mint-btn {
+            width: 100%;
+            padding: 0.9rem;
+            margin-top: 1.25rem;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mint-btn:hover { box-shadow: 0 4px 20px var(--accent-glow); transform: translateY(-1px); }
+        .mint-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        .mint-btn.loading { pointer-events: none; opacity: 0.7; }
+
+        /* Position */
+        .position-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .position-row:last-child { border-bottom: none; }
+        .position-label { color: var(--text-muted); font-size: 0.85rem; }
+        .position-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+        .health-bar-container { margin-top: 1rem; }
+
+        .health-bar-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .health-bar {
+            height: 8px;
+            background: var(--surface-2);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .health-bar-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+
+        /* Activity */
+        .tx-log { max-height: 220px; overflow-y: auto; }
+
+        .tx-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.8rem;
+        }
+
+        .tx-item:last-child { border-bottom: none; }
+
+        .tx-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .tx-icon.mint { background: rgba(99, 102, 241, 0.15); color: var(--accent); }
+        .tx-icon.burn { background: rgba(239, 68, 68, 0.15); color: var(--red); }
+        .tx-icon.deposit { background: var(--green-glow); color: var(--green); }
+        .tx-icon.withdraw { background: rgba(245, 158, 11, 0.15); color: var(--orange); }
+        .tx-icon.price { background: rgba(59, 130, 246, 0.15); color: var(--blue); }
+
+        .tx-details { flex: 1; }
+        .tx-action { font-weight: 600; margin-bottom: 0.15rem; }
+        .tx-meta { color: var(--text-muted); font-size: 0.7rem; }
+        .tx-time { color: var(--text-muted); font-size: 0.7rem; white-space: nowrap; }
+
+        .tx-link {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 0.7rem;
+        }
+
+        .tx-link:hover { text-decoration: underline; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: var(--green); color: white; }
+        .toast.error { background: var(--red); color: white; }
+        .toast.info { background: var(--blue); color: white; }
+
+        /* Skeleton loading */
+        .skeleton {
+            background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 50%, var(--surface-2) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        .not-connected-msg {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 900px) {
+            .main { grid-template-columns: 1fr; padding: 1rem; }
+            .flow-container { flex-direction: column; }
+            .flow-arrow { transform: rotate(90deg); justify-content: center; padding: 0.25rem 0; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">sSPY</div>
+            <div class="logo-text">Synthetic <span>S&P 500</span></div>
+        </div>
+        <div class="header-right">
+            <div class="network-badge">
+                <div class="network-dot" id="networkDot"></div>
+                <span id="networkName">Not Connected</span>
+            </div>
+            <button class="connect-btn" id="connectBtn">Connect Wallet</button>
+        </div>
+    </header>
+
+    <main class="main">
+        <!-- Price Feed -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">SPY/USD Oracle Price</span>
+                <span class="card-badge badge-green" id="feedBadge">Loading...</span>
+            </div>
+            <div class="price-display">
+                <span class="price-value" id="price">—</span>
+            </div>
+            <div class="price-meta" id="priceMeta">Connect wallet to load on-chain data</div>
+            <div class="health-bar-container">
+                <div class="health-bar-header">
+                    <span style="color: var(--text-muted)">Staleness (1hr window)</span>
+                    <span id="freshnessLabel" style="color: var(--green)">—</span>
+                </div>
+                <div class="health-bar">
+                    <div class="health-bar-fill" id="freshnessBar" style="width: 0%; background: var(--green)"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Protocol Stats -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Protocol Status</span>
+                <span class="card-badge" id="healthBadge">—</span>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="protocolCR">—</div>
+                    <div class="stat-label">Global CR</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="tvl">—</div>
+                    <div class="stat-label">TVL (USDC)</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalSupply">—</div>
+                    <div class="stat-label">sSPY Supply</div>
+                </div>
+            </div>
+            <div class="health-bar-container">
+                <div class="health-bar-header">
+                    <span style="color: var(--text-muted)">Protocol Collateralization</span>
+                    <span style="color: var(--text-muted)">150% min</span>
+                </div>
+                <div class="health-bar">
+                    <div class="health-bar-fill" id="protocolHealthBar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Architecture Flow -->
+        <div class="card full-width">
+            <div class="card-header">
+                <span class="card-title">Data Flow Pipeline</span>
+                <button class="connect-btn" id="triggerCreBtn">Update Oracle Feeds</button>
+            </div>
+            <div class="flow-container">
+                <div class="flow-stage" id="stage1">
+                    <div class="flow-stage-label">Source</div>
+                    <div class="flow-stage-title">Finnhub API</div>
+                    <div class="flow-stage-detail">Real-time SPY stock price from public market data</div>
+                </div>
+                <div class="flow-arrow" id="arrow1">&#9654;</div>
+                <div class="flow-stage" id="stage2">
+                    <div class="flow-stage-label">Cache Layer</div>
+                    <div class="flow-stage-title">AWS Lambda</div>
+                    <div class="flow-stage-detail">API Gateway + DynamoDB price cache with key auth</div>
+                </div>
+                <div class="flow-arrow" id="arrow2">&#9654;</div>
+                <div class="flow-stage" id="stage3">
+                    <div class="flow-stage-label">Consensus</div>
+                    <div class="flow-stage-title">CRE DON</div>
+                    <div class="flow-stage-detail">Multi-node consensus, writes via KeystoneForwarder</div>
+                </div>
+                <div class="flow-arrow" id="arrow3">&#9654;</div>
+                <div class="flow-stage" id="stage4">
+                    <div class="flow-stage-label">On-Chain</div>
+                    <div class="flow-stage-title">Sepolia Contracts</div>
+                    <div class="flow-stage-detail" id="contractsDetail">PriceFeed + CollateralizationMonitor</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Minting Panel -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Trade</span>
+                <button class="refresh-btn" id="refreshBtn" title="Refresh data">&#8635;</button>
+            </div>
+            <div id="tradeContent">
+                <div class="mint-tabs">
+                    <div class="mint-tab active" data-tab="deposit">Deposit</div>
+                    <div class="mint-tab" data-tab="mint">Mint</div>
+                    <div class="mint-tab" data-tab="burn">Burn</div>
+                    <div class="mint-tab" data-tab="withdraw">Withdraw</div>
+                </div>
+
+                <!-- Deposit -->
+                <div class="tab-panel" id="depositPanel">
+                    <div class="mint-input-group">
+                        <div class="mint-input-label">
+                            <span>Amount</span>
+                            <span>Balance: <span id="usdcBalance">—</span> USDC</span>
+                        </div>
+                        <div class="mint-input-wrapper">
+                            <input type="number" class="mint-input" placeholder="0.00" id="depositInput" step="any">
+                            <button class="max-btn" id="depositMaxBtn">MAX</button>
+                            <span class="mint-token-tag">USDC</span>
+                        </div>
+                    </div>
+                    <div class="mint-info">
+                        <span class="mint-info-label">Current collateral</span>
+                        <span class="mint-info-value" id="depositCurrentColl">—</span>
+                    </div>
+                    <div class="mint-info">
+                        <span class="mint-info-label">After deposit</span>
+                        <span class="mint-info-value" id="depositAfterColl">—</span>
+                    </div>
+                    <button class="mint-btn" id="depositBtn" disabled>Connect Wallet</button>
+                </div>
+
+                <!-- Mint -->
+                <div class="tab-panel" id="mintPanel" style="display:none">
+                    <div class="mint-input-group">
+                        <div class="mint-input-label">
+                            <span>Amount to mint</span>
+                            <span>Max: <span id="maxMintDisplay">—</span> sSPY</span>
+                        </div>
+                        <div class="mint-input-wrapper">
+                            <input type="number" class="mint-input" placeholder="0.00" id="mintInput" step="any">
+                            <button class="max-btn" id="mintMaxBtn">MAX</button>
+                            <span class="mint-token-tag">sSPY</span>
+                        </div>
+                    </div>
+                    <div class="mint-info">
+                        <span class="mint-info-label">Collateral required (150% CR)</span>
+                        <span class="mint-info-value" id="collRequired">—</span>
+                    </div>
+                    <div class="mint-info">
+                        <span class="mint-info-label">Mint fee (0.3%)</span>
+                        <span class="mint-info-value" id="mintFee">—</span>
+                    </div>
+                    <div class="mint-info">
+                        <span class="mint-info-label">You receive</span>
+                        <span class="mint-info-value" id="mintReceive">—</span>
+                    </div>
+                    <button class="mint-btn" id="mintBtn" disabled>Connect Wallet</button>
+                </div>
+
+                <!-- Burn -->
+                <div class="tab-panel" id="burnPanel" style="display:none">
+                    <div class="mint-input-group">
+                        <div class="mint-input-label">
+                            <span>Amount to burn</span>
+                            <span>Balance: <span id="sspyBalanceBurn">—</span> sSPY</span>
+                        </div>
+                        <div class="mint-input-wrapper">
+                            <input type="number" class="mint-input" placeholder="0.00" id="burnInput" step="any">
+                            <button class="max-btn" id="burnMaxBtn">MAX</button>
+                            <span class="mint-token-tag">sSPY</span>
+                        </div>
+                    </div>
+                    <div class="mint-info">
+                        <span class="mint-info-label">Collateral unlocked</span>
+                        <span class="mint-info-value" id="burnUnlocked">—</span>
+                    </div>
+                    <button class="mint-btn" id="burnBtn" disabled style="background: linear-gradient(135deg, var(--red), #dc2626)">Connect Wallet</button>
+                </div>
+
+                <!-- Withdraw -->
+                <div class="tab-panel" id="withdrawPanel" style="display:none">
+                    <div class="mint-input-group">
+                        <div class="mint-input-label">
+                            <span>Amount to withdraw</span>
+                            <span>Available: <span id="availableCollWithdraw">—</span> USDC</span>
+                        </div>
+                        <div class="mint-input-wrapper">
+                            <input type="number" class="mint-input" placeholder="0.00" id="withdrawInput" step="any">
+                            <button class="max-btn" id="withdrawMaxBtn">MAX</button>
+                            <span class="mint-token-tag">USDC</span>
+                        </div>
+                    </div>
+                    <div class="mint-info">
+                        <span class="mint-info-label">Remaining collateral</span>
+                        <span class="mint-info-value" id="withdrawRemaining">—</span>
+                    </div>
+                    <button class="mint-btn" id="withdrawBtn" disabled style="background: linear-gradient(135deg, var(--orange), #d97706)">Connect Wallet</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Position -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Your Position</span>
+            </div>
+            <div id="positionContent">
+                <div class="position-row">
+                    <span class="position-label">Total Collateral</span>
+                    <span class="position-value" id="posTotalColl">—</span>
+                </div>
+                <div class="position-row">
+                    <span class="position-label">Locked Collateral</span>
+                    <span class="position-value" id="posLockedColl">—</span>
+                </div>
+                <div class="position-row">
+                    <span class="position-label">Available Collateral</span>
+                    <span class="position-value" id="posAvailColl" style="color: var(--green)">—</span>
+                </div>
+                <div class="position-row">
+                    <span class="position-label">sSPY Balance</span>
+                    <span class="position-value" id="posSspyBalance">—</span>
+                </div>
+                <div class="position-row">
+                    <span class="position-label">Position Value</span>
+                    <span class="position-value" id="posValue">—</span>
+                </div>
+                <div class="position-row">
+                    <span class="position-label">Your CR</span>
+                    <span class="position-value" id="posCR">—</span>
+                </div>
+                <div class="health-bar-container">
+                    <div class="health-bar-header">
+                        <span style="color: var(--text-muted)">Collateral Buffer (above 150% min)</span>
+                        <span id="riskLabel" style="color: var(--green)">—</span>
+                    </div>
+                    <div class="health-bar">
+                        <div class="health-bar-fill" id="riskBar" style="width: 0%; background: var(--green)"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="card full-width">
+            <div class="card-header">
+                <span class="card-title">Activity</span>
+            </div>
+            <div class="tx-log" id="txLog">
+                <div class="not-connected-msg">Connect wallet to see activity</div>
+            </div>
+        </div>
+    </main>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+    // ============ CONTRACT CONFIG ============
+    const CONFIG = {
+        rpcUrl: 'https://ethereum-sepolia-rpc.publicnode.com',
+        chainId: 11155111,
+        contracts: {},  // populated at runtime from deploy-published JSON files
+        etherscan: 'https://sepolia.etherscan.io'
+    };
+
+    // ============ ABIs ============
+    const PRICE_FEED_ABI = [
+        'function getLatestPrice() view returns (uint256 price, uint256 timestamp)',
+        'function latestPrice() view returns (uint256 price, uint256 timestamp)'
+    ];
+
+    const COLLATERAL_MONITOR_ABI = [
+        'function getLatestData() view returns (tuple(uint256 price, uint256 reserves, uint256 ratio, uint256 timestamp, bool isHealthy))',
+        'function minRatio() view returns (uint256)'
+    ];
+
+    const SYNTHETIC_MINTER_ABI = [
+        'function totalCollateral(address) view returns (uint256)',
+        'function lockedCollateral(address) view returns (uint256)',
+        'function getAvailableCollateral(address) view returns (uint256)',
+        'function getMaxMintable(address) view returns (uint256)',
+        'function getUserCollateralRatio(address) view returns (uint256)',
+        'function getPositionValue(address) view returns (uint256)',
+        'function getCollateralValue() view returns (uint256)',
+        'function minCollateralizationRatio() view returns (uint256)',
+        'function mintFeeBps() view returns (uint256)',
+        'function stalenessWindow() view returns (uint256)',
+        'function depositCollateral(uint256)',
+        'function withdrawCollateral(uint256)',
+        'function mint(uint256)',
+        'function burn(uint256)',
+        'event CollateralDeposited(address indexed user, uint256 amount, uint256 priceAtDeposit)',
+        'event CollateralWithdrawn(address indexed user, uint256 amount)',
+        'event SyntheticMinted(address indexed user, uint256 amount, uint256 priceUsed, uint256 collateralRatio)',
+        'event SyntheticBurned(address indexed user, uint256 amount, uint256 priceUsed, uint256 collateralReleased)'
+    ];
+
+    const ERC20_ABI = [
+        'function balanceOf(address) view returns (uint256)',
+        'function totalSupply() view returns (uint256)',
+        'function approve(address, uint256) returns (bool)',
+        'function allowance(address, address) view returns (uint256)',
+        'function decimals() view returns (uint8)'
+    ];
+
+    // ============ STATE ============
+    let provider = null;
+    let signer = null;
+    let userAddress = null;
+    let contracts = {};
+    let readContracts = {};
+    let currentPrice = 0n;
+    let priceTimestamp = 0;
+    let refreshInterval = null;
+    let flowInterval = null;
+
+    // ============ INIT ============
+    const readProvider = new ethers.JsonRpcProvider(CONFIG.rpcUrl);
+
+    (async () => {
+        // Load deployed addresses (overrides hardcoded fallbacks) from deploy-published files
+        for (const f of ['deployed-addresses.json', 'oracle-addresses.json']) {
+            try {
+                const res = await fetch(f, { cache: 'no-store' });
+                if (res.ok) Object.assign(CONFIG.contracts, (await res.json()).contracts);
+            } catch {}
+        }
+
+        // Addresses come entirely from the deploy scripts; bail out cleanly if not deployed yet
+        const missing = ['PriceFeed', 'CollateralizationMonitor', 'SyntheticMinter', 'SyntheticToken', 'USDC']
+            .filter(k => !CONFIG.contracts[k]);
+        if (missing.length) {
+            document.getElementById('feedBadge').textContent = 'Not Deployed';
+            document.getElementById('feedBadge').className = 'card-badge badge-red';
+            document.getElementById('priceMeta').textContent = 'Contracts not deployed — run the deploy scripts (see README)';
+            showToast('Contracts not deployed yet — run the deploy scripts', 'error');
+            return;
+        }
+
+        // Read-only contracts (always available)
+        readContracts.priceFeed = new ethers.Contract(CONFIG.contracts.PriceFeed, PRICE_FEED_ABI, readProvider);
+        readContracts.monitor = new ethers.Contract(CONFIG.contracts.CollateralizationMonitor, COLLATERAL_MONITOR_ABI, readProvider);
+        readContracts.minter = new ethers.Contract(CONFIG.contracts.SyntheticMinter, SYNTHETIC_MINTER_ABI, readProvider);
+        readContracts.token = new ethers.Contract(CONFIG.contracts.SyntheticToken, ERC20_ABI, readProvider);
+        readContracts.usdc = new ethers.Contract(CONFIG.contracts.USDC, ERC20_ABI, readProvider);
+
+        // Load public data immediately
+        loadPublicData();
+        startFlowAnimation();
+
+        // Refresh every 15s
+        refreshInterval = setInterval(loadPublicData, 15000);
+    })();
+
+    // ============ WALLET CONNECTION ============
+    document.getElementById('connectBtn').addEventListener('click', connectWallet);
+
+    async function connectWallet() {
+        if (!window.ethereum) {
+            showToast('Please install MetaMask', 'error');
+            return;
+        }
+        if (!CONFIG.contracts.SyntheticMinter) {
+            showToast('Contracts not deployed yet', 'error');
+            return;
+        }
+
+        try {
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            provider = new ethers.BrowserProvider(window.ethereum);
+            signer = await provider.getSigner();
+            userAddress = await signer.getAddress();
+
+            // Check network
+            const network = await provider.getNetwork();
+            if (Number(network.chainId) !== CONFIG.chainId) {
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: '0x' + CONFIG.chainId.toString(16) }]
+                    });
+                    provider = new ethers.BrowserProvider(window.ethereum);
+                    signer = await provider.getSigner();
+                } catch (e) {
+                    showToast('Please switch to Sepolia network', 'error');
+                    return;
+                }
+            }
+
+            // Create write contracts
+            contracts.minter = new ethers.Contract(CONFIG.contracts.SyntheticMinter, SYNTHETIC_MINTER_ABI, signer);
+            contracts.usdc = new ethers.Contract(CONFIG.contracts.USDC, ERC20_ABI, signer);
+            contracts.token = new ethers.Contract(CONFIG.contracts.SyntheticToken, ERC20_ABI, signer);
+
+            // Update UI
+            const short = userAddress.slice(0, 6) + '...' + userAddress.slice(-4);
+            document.getElementById('connectBtn').textContent = short;
+            document.getElementById('connectBtn').classList.add('connected');
+            document.getElementById('networkDot').classList.add('connected');
+            document.getElementById('networkName').textContent = 'Sepolia';
+
+            // Enable buttons
+            updateButtonStates();
+
+            // Load user data
+            await loadUserData();
+
+            showToast('Wallet connected', 'success');
+
+            // Listen for account/network changes
+            window.ethereum.on('accountsChanged', () => location.reload());
+            window.ethereum.on('chainChanged', () => location.reload());
+        } catch (err) {
+            showToast('Connection failed: ' + err.message, 'error');
+        }
+    }
+
+    // ============ DATA LOADING ============
+    async function loadPublicData() {
+        try {
+            // Price feed
+            const [price, timestamp] = await readContracts.priceFeed.getLatestPrice();
+            currentPrice = price;
+            priceTimestamp = Number(timestamp);
+
+            const priceNum = Number(price) / 1e8;
+            document.getElementById('price').textContent = '$' + priceNum.toFixed(2);
+
+            const age = Math.floor(Date.now() / 1000) - priceTimestamp;
+            document.getElementById('priceMeta').textContent = `Last update: ${formatAge(age)} | Source: CRE DON → PriceFeed contract`;
+
+            // Freshness
+            const stalenessWindow = 3600;
+            const freshPct = Math.max(0, Math.min(100, ((stalenessWindow - age) / stalenessWindow) * 100));
+            document.getElementById('freshnessLabel').textContent = Math.round(freshPct) + '%';
+            document.getElementById('freshnessBar').style.width = freshPct + '%';
+            if (freshPct > 60) {
+                document.getElementById('freshnessBar').style.background = 'var(--green)';
+                document.getElementById('freshnessLabel').style.color = 'var(--green)';
+            } else if (freshPct > 30) {
+                document.getElementById('freshnessBar').style.background = 'var(--orange)';
+                document.getElementById('freshnessLabel').style.color = 'var(--orange)';
+            } else {
+                document.getElementById('freshnessBar').style.background = 'var(--red)';
+                document.getElementById('freshnessLabel').style.color = 'var(--red)';
+            }
+
+            // Feed badge
+            const feedBadge = document.getElementById('feedBadge');
+            if (age < 120) {
+                feedBadge.textContent = 'Live';
+                feedBadge.className = 'card-badge badge-green';
+            } else if (age < stalenessWindow) {
+                feedBadge.textContent = 'Delayed';
+                feedBadge.className = 'card-badge badge-orange';
+            } else {
+                feedBadge.textContent = 'Stale';
+                feedBadge.className = 'card-badge badge-red';
+            }
+
+            // Collateral monitor
+            const data = await readContracts.monitor.getLatestData();
+            const healthBadge = document.getElementById('healthBadge');
+            if (data.isHealthy) {
+                healthBadge.textContent = 'Healthy';
+                healthBadge.className = 'card-badge badge-green';
+            } else {
+                healthBadge.textContent = 'Unhealthy';
+                healthBadge.className = 'card-badge badge-red';
+            }
+
+            const ratio = Number(data.ratio);
+            document.getElementById('protocolCR').textContent = ratio > 0 ? ratio + '%' : 'N/A';
+            document.getElementById('protocolCR').style.color = ratio >= 150 ? 'var(--green)' : ratio >= 120 ? 'var(--orange)' : 'var(--red)';
+
+            // Health bar (clamp between 100% and 300% for display)
+            const barPct = Math.min(100, Math.max(0, ratio - 100));
+            document.getElementById('protocolHealthBar').style.width = barPct + '%';
+            document.getElementById('protocolHealthBar').style.background = ratio >= 150 ? 'linear-gradient(90deg, var(--green), #34d399)' : 'var(--orange)';
+
+            // TVL
+            const tvl = await readContracts.minter.getCollateralValue();
+            const tvlNum = Number(tvl) / 1e6;
+            document.getElementById('tvl').textContent = tvlNum >= 1000 ? '$' + (tvlNum / 1000).toFixed(1) + 'K' : '$' + tvlNum.toFixed(2);
+
+            // Total supply
+            const supply = await readContracts.token.totalSupply();
+            const supplyNum = Number(supply) / 1e18;
+            document.getElementById('totalSupply').textContent = supplyNum.toFixed(4);
+
+        } catch (err) {
+            console.error('Error loading public data:', err);
+            document.getElementById('feedBadge').textContent = 'Error';
+            document.getElementById('feedBadge').className = 'card-badge badge-red';
+        }
+    }
+
+    async function loadUserData() {
+        if (!userAddress) return;
+
+        try {
+            const [totalColl, lockedColl, availColl, sspyBal, usdcBal] = await Promise.all([
+                readContracts.minter.totalCollateral(userAddress),
+                readContracts.minter.lockedCollateral(userAddress),
+                readContracts.minter.getAvailableCollateral(userAddress),
+                readContracts.token.balanceOf(userAddress),
+                readContracts.usdc.balanceOf(userAddress)
+            ]);
+
+            const totalCollNum = Number(totalColl) / 1e6;
+            const lockedCollNum = Number(lockedColl) / 1e6;
+            const availCollNum = Number(availColl) / 1e6;
+            const sspyNum = Number(sspyBal) / 1e18;
+            const usdcNum = Number(usdcBal) / 1e6;
+
+            // Position card
+            document.getElementById('posTotalColl').textContent = totalCollNum.toFixed(2) + ' USDC';
+            document.getElementById('posLockedColl').textContent = lockedCollNum.toFixed(2) + ' USDC';
+            document.getElementById('posAvailColl').textContent = availCollNum.toFixed(2) + ' USDC';
+            document.getElementById('posSspyBalance').textContent = sspyNum.toFixed(6) + ' sSPY';
+
+            // Position value
+            if (currentPrice > 0n && sspyBal > 0n) {
+                const posVal = Number(sspyBal * currentPrice / (10n ** 8n)) / 1e18;
+                document.getElementById('posValue').textContent = '$' + posVal.toFixed(2);
+            } else {
+                document.getElementById('posValue').textContent = '$0.00';
+            }
+
+            // CR
+            let crText = '—';
+            let crColor = 'var(--text-muted)';
+            if (sspyBal > 0n && lockedColl > 0n && currentPrice > 0n) {
+                let cr;
+                try {
+                    cr = Number(await readContracts.minter.getUserCollateralRatio(userAddress));
+                } catch {
+                    cr = Number(lockedColl * 100n * (10n ** 8n) * (10n ** 12n) / (sspyBal * currentPrice));
+                }
+                crText = cr.toFixed(0) + '%';
+                crColor = cr >= 150 ? 'var(--green)' : cr >= 120 ? 'var(--orange)' : 'var(--red)';
+
+                // Buffer bar (how far above 150% min)
+                const buffer = Math.max(0, Math.min(100, ((cr - 150) / 100) * 100));
+                document.getElementById('riskBar').style.width = buffer + '%';
+                document.getElementById('riskBar').style.background = buffer > 50 ? 'var(--green)' : buffer > 20 ? 'var(--orange)' : 'var(--red)';
+                document.getElementById('riskLabel').textContent = cr < 150 ? 'Below Minimum' : buffer > 50 ? 'Strong' : buffer > 20 ? 'Thin' : 'At Minimum';
+                document.getElementById('riskLabel').style.color = buffer > 50 ? 'var(--green)' : buffer > 20 ? 'var(--orange)' : 'var(--red)';
+            } else {
+                document.getElementById('riskBar').style.width = '0%';
+                document.getElementById('riskLabel').textContent = 'No Position';
+                document.getElementById('riskLabel').style.color = 'var(--text-muted)';
+            }
+            document.getElementById('posCR').textContent = crText;
+            document.getElementById('posCR').style.color = crColor;
+
+            // Trade panel values
+            document.getElementById('usdcBalance').textContent = usdcNum.toFixed(2);
+            document.getElementById('depositCurrentColl').textContent = totalCollNum.toFixed(2) + ' USDC';
+            document.getElementById('sspyBalanceBurn').textContent = (Math.floor(sspyNum * 1e6) / 1e6).toFixed(6);
+            document.getElementById('availableCollWithdraw').textContent = (Math.floor(availCollNum * 100) / 100).toFixed(2);
+
+            // Max mintable
+            try {
+                const maxMint = await readContracts.minter.getMaxMintable(userAddress);
+                const maxMintNum = Math.floor(Number(maxMint) / 1e18 * 1e4) / 1e4;
+                document.getElementById('maxMintDisplay').textContent = maxMintNum.toFixed(4);
+            } catch {
+                document.getElementById('maxMintDisplay').textContent = '0';
+            }
+
+            // Load recent events
+            loadEvents();
+        } catch (err) {
+            console.error('Error loading user data:', err);
+        }
+    }
+
+    async function loadEvents() {
+        if (!userAddress) return;
+        const log = document.getElementById('txLog');
+        log.innerHTML = '';
+
+        try {
+            const currentBlock = await readProvider.getBlockNumber();
+            const fromBlock = Math.max(0, currentBlock - 10000);
+
+            const minterInterface = new ethers.Interface(SYNTHETIC_MINTER_ABI);
+
+            // Get events
+            const filter = { address: CONFIG.contracts.SyntheticMinter, fromBlock, toBlock: 'latest' };
+            const logs = await readProvider.getLogs(filter);
+
+            const events = [];
+            for (const l of logs) {
+                try {
+                    const parsed = minterInterface.parseLog({ topics: l.topics, data: l.data });
+                    if (parsed && parsed.args[0] && parsed.args[0].toLowerCase() === userAddress.toLowerCase()) {
+                        events.push({ ...parsed, blockNumber: l.blockNumber, txHash: l.transactionHash });
+                    }
+                } catch {}
+            }
+
+            // Show last 8 events
+            const recent = events.slice(-8).reverse();
+            if (recent.length === 0) {
+                log.innerHTML = '<div class="not-connected-msg">No activity found for this wallet</div>';
+                return;
+            }
+
+            for (const ev of recent) {
+                const item = document.createElement('div');
+                item.className = 'tx-item';
+
+                let icon = '', iconClass = '', action = '', meta = '';
+
+                if (ev.name === 'CollateralDeposited') {
+                    iconClass = 'deposit';
+                    icon = '&#8595;';
+                    action = `Deposited ${(Number(ev.args[1]) / 1e6).toFixed(2)} USDC`;
+                    meta = 'Collateral deposit';
+                } else if (ev.name === 'CollateralWithdrawn') {
+                    iconClass = 'withdraw';
+                    icon = '&#8593;';
+                    action = `Withdrew ${(Number(ev.args[1]) / 1e6).toFixed(2)} USDC`;
+                    meta = 'Collateral withdrawal';
+                } else if (ev.name === 'SyntheticMinted') {
+                    iconClass = 'mint';
+                    icon = '&#9670;';
+                    action = `Minted ${(Number(ev.args[1]) / 1e18).toFixed(6)} sSPY`;
+                    meta = `Price: $${(Number(ev.args[2]) / 1e8).toFixed(2)} | CR: ${Number(ev.args[3])}%`;
+                } else if (ev.name === 'SyntheticBurned') {
+                    iconClass = 'burn';
+                    icon = '&#9671;';
+                    action = `Burned ${(Number(ev.args[1]) / 1e18).toFixed(6)} sSPY`;
+                    meta = `Released ${(Number(ev.args[3]) / 1e6).toFixed(2)} USDC`;
+                }
+
+                item.innerHTML = `
+                    <div class="tx-icon ${iconClass}">${icon}</div>
+                    <div class="tx-details">
+                        <div class="tx-action">${action}</div>
+                        <div class="tx-meta">${meta}</div>
+                    </div>
+                    <a class="tx-link" href="${CONFIG.etherscan}/tx/${ev.txHash}" target="_blank">View</a>
+                `;
+                log.appendChild(item);
+            }
+        } catch (err) {
+            console.error('Error loading events:', err);
+            log.innerHTML = '<div class="not-connected-msg">Error loading events</div>';
+        }
+    }
+
+    // ============ TRANSACTIONS ============
+    async function doDeposit() {
+        const amount = document.getElementById('depositInput').value;
+        if (!amount || parseFloat(amount) <= 0) return;
+
+        const btn = document.getElementById('depositBtn');
+        btn.classList.add('loading');
+        btn.textContent = 'Approving...';
+
+        try {
+            const amountWei = ethers.parseUnits(amount, 6);
+
+            // Check allowance
+            const allowance = await readContracts.usdc.allowance(userAddress, CONFIG.contracts.SyntheticMinter);
+            if (allowance < amountWei) {
+                const approveTx = await contracts.usdc.approve(CONFIG.contracts.SyntheticMinter, amountWei);
+                showToast('Approval submitted...', 'info');
+                await approveTx.wait();
+            }
+
+            btn.textContent = 'Depositing...';
+            const tx = await contracts.minter.depositCollateral(amountWei);
+            showToast('Deposit submitted...', 'info');
+            await tx.wait();
+
+            showToast(`Deposited ${amount} USDC`, 'success');
+            document.getElementById('depositInput').value = '';
+            await loadUserData();
+            await loadPublicData();
+        } catch (err) {
+            showToast('Deposit failed: ' + (err.reason || err.message), 'error');
+        } finally {
+            btn.classList.remove('loading');
+            btn.textContent = 'Deposit Collateral';
+        }
+    }
+
+    async function doMint() {
+        const amount = document.getElementById('mintInput').value;
+        if (!amount || parseFloat(amount) <= 0) return;
+
+        const btn = document.getElementById('mintBtn');
+        btn.classList.add('loading');
+        btn.textContent = 'Minting...';
+
+        try {
+            const amountWei = ethers.parseUnits(amount, 18);
+            const tx = await contracts.minter.mint(amountWei);
+            showToast('Mint submitted...', 'info');
+            await tx.wait();
+
+            showToast(`Minted ${amount} sSPY`, 'success');
+            document.getElementById('mintInput').value = '';
+            await loadUserData();
+            await loadPublicData();
+        } catch (err) {
+            showToast('Mint failed: ' + (err.reason || err.message), 'error');
+        } finally {
+            btn.classList.remove('loading');
+            btn.textContent = 'Mint sSPY';
+        }
+    }
+
+    async function doBurn() {
+        const amount = document.getElementById('burnInput').value;
+        if (!amount || parseFloat(amount) <= 0) return;
+
+        const btn = document.getElementById('burnBtn');
+        btn.classList.add('loading');
+        btn.textContent = 'Burning...';
+
+        try {
+            const amountWei = ethers.parseUnits(amount, 18);
+            const tx = await contracts.minter.burn(amountWei);
+            showToast('Burn submitted...', 'info');
+            await tx.wait();
+
+            showToast(`Burned ${amount} sSPY`, 'success');
+            document.getElementById('burnInput').value = '';
+            await loadUserData();
+            await loadPublicData();
+        } catch (err) {
+            showToast('Burn failed: ' + (err.reason || err.message), 'error');
+        } finally {
+            btn.classList.remove('loading');
+            btn.textContent = 'Burn sSPY';
+        }
+    }
+
+    async function doWithdraw() {
+        const amount = document.getElementById('withdrawInput').value;
+        if (!amount || parseFloat(amount) <= 0) return;
+
+        const btn = document.getElementById('withdrawBtn');
+        btn.classList.add('loading');
+        btn.textContent = 'Withdrawing...';
+
+        try {
+            const amountWei = ethers.parseUnits(amount, 6);
+            const tx = await contracts.minter.withdrawCollateral(amountWei);
+            showToast('Withdrawal submitted...', 'info');
+            await tx.wait();
+
+            showToast(`Withdrew ${amount} USDC`, 'success');
+            document.getElementById('withdrawInput').value = '';
+            await loadUserData();
+            await loadPublicData();
+        } catch (err) {
+            showToast('Withdrawal failed: ' + (err.reason || err.message), 'error');
+        } finally {
+            btn.classList.remove('loading');
+            btn.textContent = 'Withdraw USDC';
+        }
+    }
+
+    // ============ INPUT HANDLERS ============
+    document.getElementById('depositInput').addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value) || 0;
+        const current = parseFloat(document.getElementById('depositCurrentColl').textContent) || 0;
+        document.getElementById('depositAfterColl').textContent = (current + val).toFixed(2) + ' USDC';
+    });
+
+    document.getElementById('mintInput').addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value) || 0;
+        if (currentPrice > 0n) {
+            const priceNum = Number(currentPrice) / 1e8;
+            const collRequired = val * priceNum * 1.5;
+            const fee = val * 0.003;
+            document.getElementById('collRequired').textContent = collRequired.toFixed(2) + ' USDC';
+            document.getElementById('mintFee').textContent = fee.toFixed(6) + ' sSPY';
+            document.getElementById('mintReceive').textContent = (val - fee).toFixed(6) + ' sSPY';
+        }
+    });
+
+    document.getElementById('burnInput').addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value) || 0;
+        const sspyBal = parseFloat(document.getElementById('sspyBalanceBurn').textContent) || 0;
+        const lockedColl = parseFloat(document.getElementById('posLockedColl').textContent) || 0;
+        if (sspyBal > 0) {
+            const released = (lockedColl * val / sspyBal).toFixed(2);
+            document.getElementById('burnUnlocked').textContent = released + ' USDC';
+        }
+    });
+
+    document.getElementById('withdrawInput').addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value) || 0;
+        const totalColl = parseFloat(document.getElementById('posTotalColl').textContent) || 0;
+        document.getElementById('withdrawRemaining').textContent = Math.max(0, totalColl - val).toFixed(2) + ' USDC';
+    });
+
+    // MAX buttons
+    document.getElementById('depositMaxBtn').addEventListener('click', () => {
+        document.getElementById('depositInput').value = document.getElementById('usdcBalance').textContent;
+        document.getElementById('depositInput').dispatchEvent(new Event('input'));
+    });
+
+    document.getElementById('mintMaxBtn').addEventListener('click', async () => {
+        if (!userAddress) return;
+        const maxMint = await readContracts.minter.getMaxMintable(userAddress);
+        document.getElementById('mintInput').value = ethers.formatUnits(maxMint, 18);
+        document.getElementById('mintInput').dispatchEvent(new Event('input'));
+    });
+
+    document.getElementById('burnMaxBtn').addEventListener('click', async () => {
+        if (!userAddress) return;
+        const bal = await readContracts.token.balanceOf(userAddress);
+        document.getElementById('burnInput').value = ethers.formatUnits(bal, 18);
+        document.getElementById('burnInput').dispatchEvent(new Event('input'));
+    });
+
+    document.getElementById('withdrawMaxBtn').addEventListener('click', () => {
+        document.getElementById('withdrawInput').value = document.getElementById('availableCollWithdraw').textContent;
+        document.getElementById('withdrawInput').dispatchEvent(new Event('input'));
+    });
+
+    // ============ BUTTON WIRING ============
+    document.getElementById('depositBtn').addEventListener('click', () => userAddress ? doDeposit() : connectWallet());
+    document.getElementById('mintBtn').addEventListener('click', () => userAddress ? doMint() : connectWallet());
+    document.getElementById('burnBtn').addEventListener('click', () => userAddress ? doBurn() : connectWallet());
+    document.getElementById('withdrawBtn').addEventListener('click', () => userAddress ? doWithdraw() : connectWallet());
+    ['depositBtn', 'mintBtn', 'burnBtn', 'withdrawBtn'].forEach(id => document.getElementById(id).disabled = false);
+
+    document.getElementById('refreshBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('refreshBtn');
+        btn.classList.add('spinning');
+        await loadPublicData();
+        if (userAddress) await loadUserData();
+        btn.classList.remove('spinning');
+    });
+
+    document.getElementById('triggerCreBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('triggerCreBtn');
+        btn.disabled = true;
+        const orig = btn.textContent;
+        btn.textContent = 'Updating…';
+        showToast('Running CRE workflow (broadcasts to Sepolia, ~30-90s)…', 'info');
+        try {
+            const data = await (await fetch('/trigger-cre', { method: 'POST' })).json();
+            console.log(data.output);
+            if (data.ok) {
+                showToast('Oracle feeds updated', 'success');
+                await loadPublicData();
+                if (userAddress) await loadUserData();
+            } else {
+                showToast('CRE run failed (see console/server logs)', 'error');
+            }
+        } catch (err) {
+            showToast('Trigger failed: ' + err.message, 'error');
+        } finally {
+            btn.textContent = orig;
+            btn.disabled = false;
+        }
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('refreshBtn');
+        btn.classList.add('spinning');
+        await loadPublicData();
+        if (userAddress) await loadUserData();
+        btn.classList.remove('spinning');
+    });
+
+    function updateButtonStates() {
+        document.getElementById('depositBtn').disabled = false;
+        document.getElementById('depositBtn').textContent = 'Deposit Collateral';
+        document.getElementById('mintBtn').disabled = false;
+        document.getElementById('mintBtn').textContent = 'Mint sSPY';
+        document.getElementById('burnBtn').disabled = false;
+        document.getElementById('burnBtn').textContent = 'Burn sSPY';
+        document.getElementById('withdrawBtn').disabled = false;
+        document.getElementById('withdrawBtn').textContent = 'Withdraw USDC';
+    }
+
+    // ============ TABS ============
+    document.querySelectorAll('.mint-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.mint-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+            document.getElementById(tab.dataset.tab + 'Panel').style.display = 'block';
+        });
+    });
+
+    // ============ FLOW ANIMATION ============
+    function startFlowAnimation() {
+        let step = 0;
+        const stages = ['stage1', 'stage2', 'stage3', 'stage4'];
+        const arrows = ['arrow1', 'arrow2', 'arrow3'];
+
+        flowInterval = setInterval(() => {
+            stages.forEach(s => document.getElementById(s).classList.remove('active'));
+            arrows.forEach(a => document.getElementById(a).classList.remove('active'));
+
+            if (step < stages.length) {
+                document.getElementById(stages[step]).classList.add('active');
+                if (step > 0) document.getElementById(arrows[step - 1]).classList.add('active');
+            }
+            step = (step + 1) % (stages.length + 1);
+        }, 1500);
+    }
+
+    // ============ UTILS ============
+    function formatAge(seconds) {
+        if (seconds < 60) return seconds + 's ago';
+        if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+        if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+        return Math.floor(seconds / 86400) + 'd ago';
+    }
+
+    function showToast(msg, type) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = 'toast ' + type + ' show';
+        setTimeout(() => t.classList.remove('show'), 4000);
+    }
+    </script>
+</body>
+</html>

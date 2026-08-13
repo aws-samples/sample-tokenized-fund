@@ -1,0 +1,19 @@
+# CRE Workflow Settings
+# Defines workflow configuration for different deployment targets
+# See: https://docs.chain.link/cre/reference/project-configuration
+
+staging-settings:
+  user-workflow:
+    workflow-name: "api-oracle-staging"
+  workflow-artifacts:
+    workflow-path: "."                      # Current directory (main.go location)
+    config-path: "./config.staging.json"   # Staging configuration
+    secrets-path: "../secrets.yaml"        # Secrets mapping (project root)
+
+production-settings:
+  user-workflow:
+    workflow-name: "api-oracle-production"
+  workflow-artifacts:
+    workflow-path: "."
+    config-path: "./config.production.json"
+    secrets-path: "../secrets.yaml"

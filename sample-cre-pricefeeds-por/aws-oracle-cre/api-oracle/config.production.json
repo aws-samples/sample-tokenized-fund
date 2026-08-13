@@ -1,0 +1,13 @@
+{
+  "schedule": "*/30 * * * * *",
+  "apiUrl": "YOUR_API_GATEWAY_URL_HERE",
+  "minCollateralizationRatio": 1.2,
+  "evms": [
+    {
+      "chainName": "ethereum-testnet-sepolia",
+      "priceFeedAddress": "YOUR_PRICE_FEED_CONTRACT_ADDRESS",
+      "collateralizationMonitorAddress": "YOUR_COLLATERALIZATION_MONITOR_ADDRESS",
+      "gasLimit": 500000
+    }
+  ]
+}
