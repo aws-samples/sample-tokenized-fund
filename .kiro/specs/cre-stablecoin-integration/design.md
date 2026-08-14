@@ -139,15 +139,19 @@ contract SyntheticMinter is Ownable, Pausable, ReentrancyGuard {
     SyntheticToken public immutable syntheticToken;
     
     // Risk parameters
-    uint256 public minCollateralizationRatio = 150; // 150%
+    uint256 public minCollateralizationRatio = 150; // 150% to open/increase a position
+    uint256 public liquidationThreshold = 120;      // 120% — below this a position is liquidatable
+    uint256 public liquidationBonusBps = 1000;      // 10% liquidator bonus (max 30%)
     uint256 public mintFeeBps = 30;                 // 0.3%
     uint256 public stalenessWindow = 3600;          // 1 hour
     
     // User positions
     mapping(address => uint256) public totalCollateral;
     mapping(address => uint256) public lockedCollateral;
+    mapping(address => uint256) public syntheticDebt;   // sSPY liability, tracked separately from balance
+    uint256 public totalSyntheticDebt;
     
-    // Fee accounting
+    // Fee accounting (fees accrue and are paid in USDC, 6 decimals)
     address public feeRecipient;
     uint256 public accumulatedFees;
 }
@@ -183,14 +187,21 @@ contract SyntheticToken is ERC20, Ownable {
 ```solidity
 // Stored per-user
 totalCollateral[user]   // Total USDC deposited by user
-lockedCollateral[user]  // USDC currently backing minted tokens
+lockedCollateral[user]  // USDC currently backing the user's debt
+syntheticDebt[user]     // sSPY the user has minted and must repay to reclaim collateral
+                        // (tracked separately from the transferable token balance)
 
 // Derived (not stored)
 availableCollateral = totalCollateral - lockedCollateral
-syntheticBalance = syntheticToken.balanceOf(user)
-positionValue = syntheticBalance * currentPrice / 10^8
-collateralRatio = (lockedCollateral * 100) / positionValue
+debtValueUSDC       = syntheticDebt * currentPrice / (10^8 * 10^12)   // 6-decimal USDC value
+collateralRatio     = lockedCollateral * 100 / debtValueUSDC          // marked to live price
 ```
+
+**Why debt is tracked separately from the token balance.** Collateral release on burn and the
+collateralization ratio are computed against `syntheticDebt`, never `balanceOf`. sSPY is a
+transferable ERC20; if release were keyed on `balanceOf`, a minter could transfer sSPY away and
+then burn a tiny remaining balance to drain all their locked collateral, leaving the transferred
+tokens unbacked. Keying on tracked debt makes release proportional to the obligation actually owed.
 
 ### Price Data (from CRE)
 
@@ -265,17 +276,17 @@ BPS_DENOMINATOR = 10000   // Basis points denominator
 
 **Validates: Requirements 8.4**
 
-### Property 9: Mint Fee Deduction
+### Property 9: Mint Fee Charged in USDC
 
-*For any* mint with `mintFeeBps > 0`, the user SHALL receive `syntheticAmount - (syntheticAmount * mintFeeBps / 10000)` tokens, and `accumulatedFees` SHALL increase by the fee amount.
+*For any* mint with `mintFeeBps > 0`, the user SHALL receive the full `syntheticAmount` of sSPY, and `accumulatedFees` (USDC) SHALL increase by `syntheticAmount * price * mintFeeBps / (10000 * 10^PRICE_DECIMALS * 10^(SYNTHETIC_DECIMALS - USDC_DECIMALS))`, deducted from the minter's collateral.
 
 **Validates: Requirements 8.7**
 
-### Property 10: Burn Releases Proportional Collateral
+### Property 10: Burn Releases Debt-Proportional Collateral
 
-*For any* user burning `burnAmount` of their `totalSynthetic` balance, the released collateral SHALL equal `lockedCollateral[user] * burnAmount / totalSynthetic`.
+*For any* user repaying `burnAmount` of their tracked debt, the released collateral SHALL equal `lockedCollateral[user] * burnAmount / syntheticDebt[user]` — denominated against the tracked debt, not the token balance — and `syntheticDebt[user]` SHALL decrease by exactly `burnAmount`. This is CDP debt repayment: release is proportional to debt repaid and independent of the current price. (A companion example test verifies that transferring sSPY away does not let a minter over-release collateral.)
 
-**Validates: Requirements 9.2**
+**Validates: Requirements 9.2, 9.3, 9.5**
 
 ### Property 11: Partial Burn Improves or Maintains CR
 
@@ -307,6 +318,24 @@ BPS_DENOMINATOR = 10000   // Basis points denominator
 
 **Validates: Requirements 12.3**
 
+### Property 16: Liquidation Gated by Threshold
+
+*For any* position with CR >= `liquidationThreshold` at the current price, `liquidate()` SHALL revert with "Position not liquidatable"; *for any* position with CR < `liquidationThreshold`, `liquidate()` SHALL be permitted.
+
+**Validates: Requirements 13.4**
+
+### Property 17: Liquidation Improves Safety or Closes the Position
+
+*For any* liquidation of an eligible position, either the position's debt is reduced to zero (closed), or its collateralization ratio after liquidation is strictly greater than before. The liquidator receives exactly `repayValue + repayValue * liquidationBonusBps / 10000`, capped at the position's locked collateral.
+
+**Validates: Requirements 13.5, 13.6**
+
+### Property 18: Liquidation Preserves Solvency and Surfaces Bad Debt
+
+*For any* liquidation, the contract SHALL never transfer more USDC than the position's locked collateral, the solvency invariant `usdc.balanceOf(minter) >= totalLockedCollateral` SHALL hold afterward, and when seized collateral cannot cover the repaid debt value the shortfall SHALL be emitted via `BadDebtRealized` (never silently concealed).
+
+**Validates: Requirements 13.7, 13.8**
+
 ## Error Handling
 
 ### Revert Conditions
@@ -320,6 +349,13 @@ BPS_DENOMINATOR = 10000   // Basis points denominator
 | Protocol unhealthy | "Protocol unhealthy" |
 | Insufficient collateral | "Insufficient collateral" |
 | Insufficient balance | "Insufficient balance" |
+| Burn/repay exceeds caller's own debt | "Exceeds debt" |
+| Liquidating a healthy position | "Position not liquidatable" |
+| Liquidating a position with no debt | "No debt" |
+| Liquidation bonus above maximum | "Bonus exceeds maximum" |
+| Liquidation threshold below 100% | "Threshold below 100%" |
+| Liquidation threshold above min CR | "Above min collateralization" |
+| Min CR set below liquidation threshold | "Below liquidation threshold" |
 | Below min collateralization | "Below min collateralization" |
 | Contract paused | "Pausable: paused" |
 | Not owner | "Ownable: caller is not the owner" |
@@ -333,6 +369,8 @@ event CollateralDeposited(address indexed user, uint256 amount, uint256 priceAtD
 event CollateralWithdrawn(address indexed user, uint256 amount);
 event SyntheticMinted(address indexed user, uint256 amount, uint256 priceUsed, uint256 collateralRatio);
 event SyntheticBurned(address indexed user, uint256 amount, uint256 priceUsed, uint256 collateralReleased);
+event Liquidated(address indexed user, address indexed liquidator, uint256 debtRepaid, uint256 collateralSeized, uint256 priceUsed);
+event BadDebtRealized(address indexed user, uint256 shortfall);
 event FeedUpdated(string indexed feedType, address oldAddress, address newAddress);
 event RiskParamsUpdated(string indexed param, uint256 oldValue, uint256 newValue);
 event FeesCollected(address indexed recipient, uint256 amount);

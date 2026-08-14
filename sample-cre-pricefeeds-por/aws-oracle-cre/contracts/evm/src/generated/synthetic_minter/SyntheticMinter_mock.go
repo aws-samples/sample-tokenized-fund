@@ -23,6 +23,7 @@ var (
 // SyntheticMinterMock is a mock implementation of SyntheticMinter for testing.
 type SyntheticMinterMock struct {
 	BPSDENOMINATOR            func() (*big.Int, error)
+	MAXLIQUIDATIONBONUSBPS    func() (*big.Int, error)
 	PRICEDECIMALS             func() (*big.Int, error)
 	SYNTHETICDECIMALS         func() (*big.Int, error)
 	USDCDECIMALS              func() (*big.Int, error)
@@ -35,6 +36,9 @@ type SyntheticMinterMock struct {
 	GetMaxMintable            func(GetMaxMintableInput) (*big.Int, error)
 	GetPositionValue          func(GetPositionValueInput) (*big.Int, error)
 	GetUserCollateralRatio    func(GetUserCollateralRatioInput) (*big.Int, error)
+	IsLiquidatable            func(IsLiquidatableInput) (bool, error)
+	LiquidationBonusBps       func() (*big.Int, error)
+	LiquidationThreshold      func() (*big.Int, error)
 	LockedCollateral          func(LockedCollateralInput) (*big.Int, error)
 	MinCollateralizationRatio func() (*big.Int, error)
 	MintFeeBps                func() (*big.Int, error)
@@ -42,9 +46,11 @@ type SyntheticMinterMock struct {
 	Paused                    func() (bool, error)
 	PriceFeed                 func() (common.Address, error)
 	StalenessWindow           func() (*big.Int, error)
+	SyntheticDebt             func(SyntheticDebtInput) (*big.Int, error)
 	SyntheticToken            func() (common.Address, error)
 	TotalCollateral           func(TotalCollateralInput) (*big.Int, error)
 	TotalLockedCollateral     func() (*big.Int, error)
+	TotalSyntheticDebt        func() (*big.Int, error)
 	Usdc                      func() (common.Address, error)
 }
 
@@ -70,6 +76,16 @@ func NewSyntheticMinterMock(address common.Address, clientMock *evmmock.ClientCa
 				return nil, err
 			}
 			return abi.Methods["BPS_DENOMINATOR"].Outputs.Pack(result)
+		},
+		string(abi.Methods["MAX_LIQUIDATION_BONUS_BPS"].ID[:4]): func(payload []byte) ([]byte, error) {
+			if mock.MAXLIQUIDATIONBONUSBPS == nil {
+				return nil, errors.New("MAX_LIQUIDATION_BONUS_BPS method not mocked")
+			}
+			result, err := mock.MAXLIQUIDATIONBONUSBPS()
+			if err != nil {
+				return nil, err
+			}
+			return abi.Methods["MAX_LIQUIDATION_BONUS_BPS"].Outputs.Pack(result)
 		},
 		string(abi.Methods["PRICE_DECIMALS"].ID[:4]): func(payload []byte) ([]byte, error) {
 			if mock.PRICEDECIMALS == nil {
@@ -247,6 +263,50 @@ func NewSyntheticMinterMock(address common.Address, clientMock *evmmock.ClientCa
 			}
 			return abi.Methods["getUserCollateralRatio"].Outputs.Pack(result)
 		},
+		string(abi.Methods["isLiquidatable"].ID[:4]): func(payload []byte) ([]byte, error) {
+			if mock.IsLiquidatable == nil {
+				return nil, errors.New("isLiquidatable method not mocked")
+			}
+			inputs := abi.Methods["isLiquidatable"].Inputs
+
+			values, err := inputs.Unpack(payload)
+			if err != nil {
+				return nil, errors.New("Failed to unpack payload")
+			}
+			if len(values) != 1 {
+				return nil, errors.New("expected 1 input value")
+			}
+
+			args := IsLiquidatableInput{
+				User: values[0].(common.Address),
+			}
+
+			result, err := mock.IsLiquidatable(args)
+			if err != nil {
+				return nil, err
+			}
+			return abi.Methods["isLiquidatable"].Outputs.Pack(result)
+		},
+		string(abi.Methods["liquidationBonusBps"].ID[:4]): func(payload []byte) ([]byte, error) {
+			if mock.LiquidationBonusBps == nil {
+				return nil, errors.New("liquidationBonusBps method not mocked")
+			}
+			result, err := mock.LiquidationBonusBps()
+			if err != nil {
+				return nil, err
+			}
+			return abi.Methods["liquidationBonusBps"].Outputs.Pack(result)
+		},
+		string(abi.Methods["liquidationThreshold"].ID[:4]): func(payload []byte) ([]byte, error) {
+			if mock.LiquidationThreshold == nil {
+				return nil, errors.New("liquidationThreshold method not mocked")
+			}
+			result, err := mock.LiquidationThreshold()
+			if err != nil {
+				return nil, err
+			}
+			return abi.Methods["liquidationThreshold"].Outputs.Pack(result)
+		},
 		string(abi.Methods["lockedCollateral"].ID[:4]): func(payload []byte) ([]byte, error) {
 			if mock.LockedCollateral == nil {
 				return nil, errors.New("lockedCollateral method not mocked")
@@ -331,6 +391,30 @@ func NewSyntheticMinterMock(address common.Address, clientMock *evmmock.ClientCa
 			}
 			return abi.Methods["stalenessWindow"].Outputs.Pack(result)
 		},
+		string(abi.Methods["syntheticDebt"].ID[:4]): func(payload []byte) ([]byte, error) {
+			if mock.SyntheticDebt == nil {
+				return nil, errors.New("syntheticDebt method not mocked")
+			}
+			inputs := abi.Methods["syntheticDebt"].Inputs
+
+			values, err := inputs.Unpack(payload)
+			if err != nil {
+				return nil, errors.New("Failed to unpack payload")
+			}
+			if len(values) != 1 {
+				return nil, errors.New("expected 1 input value")
+			}
+
+			args := SyntheticDebtInput{
+				Arg0: values[0].(common.Address),
+			}
+
+			result, err := mock.SyntheticDebt(args)
+			if err != nil {
+				return nil, err
+			}
+			return abi.Methods["syntheticDebt"].Outputs.Pack(result)
+		},
 		string(abi.Methods["syntheticToken"].ID[:4]): func(payload []byte) ([]byte, error) {
 			if mock.SyntheticToken == nil {
 				return nil, errors.New("syntheticToken method not mocked")
@@ -374,6 +458,16 @@ func NewSyntheticMinterMock(address common.Address, clientMock *evmmock.ClientCa
 				return nil, err
 			}
 			return abi.Methods["totalLockedCollateral"].Outputs.Pack(result)
+		},
+		string(abi.Methods["totalSyntheticDebt"].ID[:4]): func(payload []byte) ([]byte, error) {
+			if mock.TotalSyntheticDebt == nil {
+				return nil, errors.New("totalSyntheticDebt method not mocked")
+			}
+			result, err := mock.TotalSyntheticDebt()
+			if err != nil {
+				return nil, err
+			}
+			return abi.Methods["totalSyntheticDebt"].Outputs.Pack(result)
 		},
 		string(abi.Methods["usdc"].ID[:4]): func(payload []byte) ([]byte, error) {
 			if mock.Usdc == nil {

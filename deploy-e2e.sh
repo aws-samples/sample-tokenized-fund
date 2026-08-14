@@ -330,6 +330,32 @@ update_cre_config() {
         fi
     fi
 
+    # config.staging.json is gitignored (deploy-specific), so a fresh clone won't have one.
+    # Without this the jq update below reads a missing file, fails silently, and the CRE
+    # workflow later aborts with "ConfigPath must be a valid existing file". Seed a template.
+    if [ ! -f "$CONFIG_FILE" ]; then
+        log "config.staging.json not found — creating from template"
+        mkdir -p "$(dirname "$CONFIG_FILE")"
+        cat > "$CONFIG_FILE" << 'STAGING_EOF'
+{
+  "schedule": "*/30 * * * * *",
+  "apiUrl": "",
+  "stockPriceApiUrl": "",
+  "minCollateralizationRatio": 1.2,
+  "evms": [
+    {
+      "chainName": "ethereum-testnet-sepolia",
+      "priceFeedAddress": "",
+      "collateralizationMonitorAddress": "",
+      "syntheticMinterAddress": "",
+      "syntheticTokenAddress": "",
+      "gasLimit": 500000
+    }
+  ]
+}
+STAGING_EOF
+    fi
+
     # Update config.staging.json
     jq --arg api "$API_URL" \
        --arg pf "$PRICE_FEED_ADDRESS" \
@@ -361,7 +387,19 @@ update_cre_config() {
     else
         echo "CRE_ETH_PRIVATE_KEY=$CRE_KEY" >> "$ENV_FILE"
     fi
-    
+
+    # Point CRE's chain-write RPC at the configured RPC_URL for this run. project.yaml ships a
+    # public default RPC (which can be unreliable / unreachable); the rest of the deploy already
+    # uses $RPC_URL, so make CRE consistent. Restore project.yaml on exit so the tracked file is
+    # not left holding a (possibly key-bearing) RPC endpoint.
+    if [ -n "$RPC_URL" ] && ! grep -q "url: $RPC_URL" "$CRE_DIR/project.yaml"; then
+        cp "$CRE_DIR/project.yaml" "$CRE_DIR/project.yaml.deploybak"
+        trap 'mv -f "$CRE_DIR/project.yaml.deploybak" "$CRE_DIR/project.yaml" 2>/dev/null || true' EXIT
+        sed -i.bak "s|url: https://[^[:space:]]*|url: $RPC_URL|g" "$CRE_DIR/project.yaml"
+        rm -f "$CRE_DIR/project.yaml.bak"
+        log "CRE RPC set to \$RPC_URL for this run (project.yaml restored on exit)"
+    fi
+
     # Generate Go bindings
     # NOTE: If behind a corporate proxy/firewall, you MUST run: export GOPROXY=direct
     log "Generating CRE Go bindings..."

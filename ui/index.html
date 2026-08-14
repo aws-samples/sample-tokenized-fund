@@ -652,9 +652,12 @@
 
                 <!-- Burn -->
                 <div class="tab-panel" id="burnPanel" style="display:none">
+                    <div class="mint-info" style="margin-bottom:12px">
+                        <span class="mint-info-label">Burning repays your sSPY debt and unlocks the USDC you locked — proportional to the debt repaid, not the SPY price. It is not a long-SPY payout.</span>
+                    </div>
                     <div class="mint-input-group">
                         <div class="mint-input-label">
-                            <span>Amount to burn</span>
+                            <span>Amount to repay</span>
                             <span>Balance: <span id="sspyBalanceBurn">—</span> sSPY</span>
                         </div>
                         <div class="mint-input-wrapper">
@@ -775,17 +778,24 @@
         'function getUserCollateralRatio(address) view returns (uint256)',
         'function getPositionValue(address) view returns (uint256)',
         'function getCollateralValue() view returns (uint256)',
+        'function syntheticDebt(address) view returns (uint256)',
+        'function isLiquidatable(address) view returns (bool)',
         'function minCollateralizationRatio() view returns (uint256)',
+        'function liquidationThreshold() view returns (uint256)',
+        'function liquidationBonusBps() view returns (uint256)',
         'function mintFeeBps() view returns (uint256)',
         'function stalenessWindow() view returns (uint256)',
         'function depositCollateral(uint256)',
         'function withdrawCollateral(uint256)',
         'function mint(uint256)',
         'function burn(uint256)',
+        'function liquidate(address,uint256)',
         'event CollateralDeposited(address indexed user, uint256 amount, uint256 priceAtDeposit)',
         'event CollateralWithdrawn(address indexed user, uint256 amount)',
         'event SyntheticMinted(address indexed user, uint256 amount, uint256 priceUsed, uint256 collateralRatio)',
-        'event SyntheticBurned(address indexed user, uint256 amount, uint256 priceUsed, uint256 collateralReleased)'
+        'event SyntheticBurned(address indexed user, uint256 amount, uint256 priceUsed, uint256 collateralReleased)',
+        'event Liquidated(address indexed user, address indexed liquidator, uint256 debtRepaid, uint256 collateralSeized, uint256 priceUsed)',
+        'event BadDebtRealized(address indexed user, uint256 shortfall)'
     ];
 
     const ERC20_ABI = [
@@ -992,12 +1002,13 @@
         if (!userAddress) return;
 
         try {
-            const [totalColl, lockedColl, availColl, sspyBal, usdcBal] = await Promise.all([
+            const [totalColl, lockedColl, availColl, sspyBal, usdcBal, debt] = await Promise.all([
                 readContracts.minter.totalCollateral(userAddress),
                 readContracts.minter.lockedCollateral(userAddress),
                 readContracts.minter.getAvailableCollateral(userAddress),
                 readContracts.token.balanceOf(userAddress),
-                readContracts.usdc.balanceOf(userAddress)
+                readContracts.usdc.balanceOf(userAddress),
+                readContracts.minter.syntheticDebt(userAddress)
             ]);
 
             const totalCollNum = Number(totalColl) / 1e6;
@@ -1005,6 +1016,10 @@
             const availCollNum = Number(availColl) / 1e6;
             const sspyNum = Number(sspyBal) / 1e18;
             const usdcNum = Number(usdcBal) / 1e6;
+            const debtNum = Number(debt) / 1e18;
+            // Expose the caller's tracked sSPY debt so burn/repay previews are accurate even if
+            // sSPY has been transferred (collateral is released against debt, not token balance).
+            window.__userDebt = debtNum;
 
             // Position card
             document.getElementById('posTotalColl').textContent = totalCollNum.toFixed(2) + ' USDC';
@@ -1020,25 +1035,26 @@
                 document.getElementById('posValue').textContent = '$0.00';
             }
 
-            // CR
+            // CR — collateralization of the caller's minted DEBT (they are the issuer/short).
+            // Below the liquidation threshold (default 120%) the position can be liquidated.
             let crText = '—';
             let crColor = 'var(--text-muted)';
-            if (sspyBal > 0n && lockedColl > 0n && currentPrice > 0n) {
+            if (debt > 0n && lockedColl > 0n && currentPrice > 0n) {
                 let cr;
                 try {
                     cr = Number(await readContracts.minter.getUserCollateralRatio(userAddress));
                 } catch {
-                    cr = Number(lockedColl * 100n * (10n ** 8n) * (10n ** 12n) / (sspyBal * currentPrice));
+                    cr = Number(lockedColl * 100n * (10n ** 8n) * (10n ** 12n) / (debt * currentPrice));
                 }
                 crText = cr.toFixed(0) + '%';
                 crColor = cr >= 150 ? 'var(--green)' : cr >= 120 ? 'var(--orange)' : 'var(--red)';
 
-                // Buffer bar (how far above 150% min)
-                const buffer = Math.max(0, Math.min(100, ((cr - 150) / 100) * 100));
+                // Buffer bar (how far above the 120% liquidation threshold)
+                const buffer = Math.max(0, Math.min(100, ((cr - 120) / 100) * 100));
                 document.getElementById('riskBar').style.width = buffer + '%';
                 document.getElementById('riskBar').style.background = buffer > 50 ? 'var(--green)' : buffer > 20 ? 'var(--orange)' : 'var(--red)';
-                document.getElementById('riskLabel').textContent = cr < 150 ? 'Below Minimum' : buffer > 50 ? 'Strong' : buffer > 20 ? 'Thin' : 'At Minimum';
-                document.getElementById('riskLabel').style.color = buffer > 50 ? 'var(--green)' : buffer > 20 ? 'var(--orange)' : 'var(--red)';
+                document.getElementById('riskLabel').textContent = cr < 120 ? 'Liquidatable' : cr < 150 ? 'Below Mint Ratio' : buffer > 50 ? 'Strong' : 'Thin';
+                document.getElementById('riskLabel').style.color = cr < 120 ? 'var(--red)' : buffer > 50 ? 'var(--green)' : 'var(--orange)';
             } else {
                 document.getElementById('riskBar').style.width = '0%';
                 document.getElementById('riskLabel').textContent = 'No Position';
@@ -1125,8 +1141,18 @@
                 } else if (ev.name === 'SyntheticBurned') {
                     iconClass = 'burn';
                     icon = '&#9671;';
-                    action = `Burned ${(Number(ev.args[1]) / 1e18).toFixed(6)} sSPY`;
-                    meta = `Released ${(Number(ev.args[3]) / 1e6).toFixed(2)} USDC`;
+                    action = `Repaid ${(Number(ev.args[1]) / 1e18).toFixed(6)} sSPY debt`;
+                    meta = `Unlocked ${(Number(ev.args[3]) / 1e6).toFixed(2)} USDC`;
+                } else if (ev.name === 'Liquidated') {
+                    iconClass = 'burn';
+                    icon = '&#9888;';
+                    action = `Liquidated: ${(Number(ev.args[2]) / 1e18).toFixed(6)} sSPY debt repaid`;
+                    meta = `Collateral seized: ${(Number(ev.args[3]) / 1e6).toFixed(2)} USDC | Price: $${(Number(ev.args[4]) / 1e8).toFixed(2)}`;
+                } else if (ev.name === 'BadDebtRealized') {
+                    iconClass = 'burn';
+                    icon = '&#9888;';
+                    action = 'Bad debt realized';
+                    meta = `Shortfall: ${(Number(ev.args[1]) / 1e6).toFixed(2)} USDC`;
                 }
 
                 item.innerHTML = `
@@ -1272,20 +1298,27 @@
         if (currentPrice > 0n) {
             const priceNum = Number(currentPrice) / 1e8;
             const collRequired = val * priceNum * 1.5;
-            const fee = val * 0.003;
+            // Fee is charged in USDC on the minted notional value; the user receives the full sSPY.
+            const feeUsdc = val * priceNum * 0.003;
             document.getElementById('collRequired').textContent = collRequired.toFixed(2) + ' USDC';
-            document.getElementById('mintFee').textContent = fee.toFixed(6) + ' sSPY';
-            document.getElementById('mintReceive').textContent = (val - fee).toFixed(6) + ' sSPY';
+            document.getElementById('mintFee').textContent = feeUsdc.toFixed(2) + ' USDC';
+            document.getElementById('mintReceive').textContent = val.toFixed(6) + ' sSPY';
         }
     });
 
     document.getElementById('burnInput').addEventListener('input', (e) => {
         const val = parseFloat(e.target.value) || 0;
-        const sspyBal = parseFloat(document.getElementById('sspyBalanceBurn').textContent) || 0;
         const lockedColl = parseFloat(document.getElementById('posLockedColl').textContent) || 0;
-        if (sspyBal > 0) {
-            const released = (lockedColl * val / sspyBal).toFixed(2);
+        // Burning repays debt: collateral unlocked is proportional to the DEBT repaid, not the
+        // token balance. This mirrors the contract (lockedCollateral * amount / syntheticDebt)
+        // and is price-independent — a minter reclaims only the USDC they locked, not SPY P&L.
+        const debt = window.__userDebt || 0;
+        if (debt > 0) {
+            const repay = Math.min(val, debt);
+            const released = (lockedColl * repay / debt).toFixed(2);
             document.getElementById('burnUnlocked').textContent = released + ' USDC';
+        } else {
+            document.getElementById('burnUnlocked').textContent = '0.00 USDC';
         }
     });
 

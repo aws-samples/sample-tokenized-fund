@@ -6,14 +6,15 @@
 > [AWS Digital Asset Samples](https://aws-samples.github.io/aws-digital-asset-samples/)
 > collection.
 
-A demonstration of integrating AWS serverless infrastructure with the Chainlink Runtime Environment (CRE) to power a tokenized fund protocol. Users deposit USDC as collateral to mint tokens that track the price of an S&P 500 ETF (sSPY), with real-time pricing sourced from public stock APIs.
+A demonstration of integrating AWS serverless infrastructure with the Chainlink Runtime Environment (CRE) to power a synthetic tokenized fund protocol. Users deposit USDC as collateral to mint sSPY, an on-chain token that tracks the price of an S&P 500 ETF using real-time market data sourced from public stock APIs.
 
-Here, **synthetic** means the sSPY token tracks the *price* of the S&P 500 via an on-chain oracle rather than being backed by actual shares. The fund's value is replicated with USDC collateral instead of holding the underlying basket.
+Here, synthetic means sSPY provides price exposure to the ETF without holding the underlying shares. Instead, sSPY is issued as collateralized debt against USDC. As the ETF price changes, the value of that debt changes with it: rising prices reduce a minter's collateral ratio, while falling prices increase it. Positions that fall below the protocol's required collateralization level can be liquidated to keep sSPY sufficiently backed.
 
 ## Contents
 
 - [Architecture](#architecture)
 - [How It Works](#how-it-works)
+- [Protocol Economics](#protocol-economics)
 - [Project Structure](#project-structure)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start-one-command)
@@ -33,6 +34,10 @@ Here, **synthetic** means the sSPY token tracks the *price* of the S&P 500 via a
 1. **AWS backend** — Lambda fetches SPY prices from Finnhub/Alpha Vantage, caches them in DynamoDB, and serves them via an API-key-protected API Gateway.
 2. **CRE workflow** (every 30s) — reads the price from Lambda and collateral/supply from the contracts, computes the collateralization ratio, then writes price + health back on-chain through DON consensus.
 3. **Users** — deposit USDC into SyntheticMinter to mint sSPY (150% collateralized), and burn sSPY to unlock their collateral.
+
+## Protocol Economics
+
+Users who mint and sell sSPY effectively take the short side of the market, while users who buy and hold sSPY receive long exposure to SPY. USDC collateral secures the outstanding synthetic debt, and liquidation ensures that positions cannot remain open when their collateral becomes insufficient.
 
 ## Project Structure
 

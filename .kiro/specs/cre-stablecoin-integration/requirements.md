@@ -4,6 +4,8 @@
 
 This specification defines a Synthetic Asset Minter that allows users to deposit USDC as collateral and mint tokenized synthetic ETFs (e.g., sSPY for the S&P 500). The system integrates with CRE (Chainlink Runtime Environment) oracle feeds to fetch real-time stock prices and monitor protocol collateralization health, enforcing mint/burn rules with configurable risk parameters.
 
+**Economic model (collateralized debt / CDP).** Minted sSPY is a *debt* the minter owes back to the protocol, over-collateralized by their locked USDC. Burning sSPY repays that debt and releases collateral **in proportion to the debt repaid, independent of the current SPY price** — a minter reclaims only the USDC they locked, never a price-based payout. This is required for solvency: the contract holds only minters' own deposits (no counterparty or sponsor), so paying a minter SPY gains would consume other users' collateral. The SPY price marks each position's collateralization ratio; positions that fall below the liquidation threshold are liquidated (Requirement 13). Long-SPY exposure accrues to whoever *holds* the sSPY token, not to the minter.
+
 ## Glossary
 
 - **Synthetic_Minter**: The smart contract that manages USDC collateral deposits, minting synthetic stock tokens, and redemptions
@@ -106,7 +108,7 @@ This specification defines a Synthetic Asset Minter that allows users to deposit
 
 ### Requirement 8: Mint Synthetic Tokens
 
-**User Story:** As a user, I want to mint synthetic stock tokens by locking my USDC collateral, so that I can gain exposure to stock price movements.
+**User Story:** As a user, I want to mint synthetic stock tokens by locking my USDC collateral, so that I hold an over-collateralized synthetic position (a debt) that I can later repay to reclaim my collateral.
 
 #### Acceptance Criteria
 
@@ -116,19 +118,20 @@ This specification defines a Synthetic Asset Minter that allows users to deposit
 4. WHEN user's available collateral is less than required, THE Synthetic_Minter SHALL revert with "Insufficient collateral"
 5. WHEN user's resulting collateralization ratio would be below `minCollateralizationRatio`, THE Synthetic_Minter SHALL revert with "Below min collateralization"
 6. WHEN minting succeeds, THE Synthetic_Minter SHALL emit `SyntheticMinted` event including amount, price used, and resulting collateral ratio
-7. IF `mintFeeBps > 0`, THEN THE Synthetic_Minter SHALL deduct fee from minted amount and record fee for protocol
+7. IF `mintFeeBps > 0`, THEN THE Synthetic_Minter SHALL charge the fee in USDC on the minted notional value, deduct it from the minter's collateral, and record it in `accumulatedFees` (the minter still receives the full `syntheticAmount` of sSPY)
 
-### Requirement 9: Burn and Redeem
+### Requirement 9: Burn and Repay Debt
 
-**User Story:** As a user, I want to burn synthetic tokens to unlock my USDC collateral, with the system preventing actions that would harm protocol health.
+**User Story:** As a user, I want to burn synthetic tokens to repay my debt and unlock my USDC collateral, reclaiming exactly the collateral I locked.
 
 #### Acceptance Criteria
 
-1. WHEN `burn(uint256 syntheticAmount)` is called, THE Synthetic_Minter SHALL fetch current stock price from CRE_Price_Feed
-2. THE Synthetic_Minter SHALL calculate USDC to release based on current price and user's collateral ratio
-3. WHEN burn succeeds, THE Synthetic_Minter SHALL reduce user's locked collateral proportionally
-4. WHEN burn succeeds, THE Synthetic_Minter SHALL emit `SyntheticBurned` event including amount and price used
-5. THE Synthetic_Minter SHALL allow partial burns that improve user's collateralization ratio
+1. WHEN `burn(uint256 syntheticAmount)` is called, THE Synthetic_Minter SHALL fetch and validate (staleness) the current stock price from CRE_Price_Feed
+2. THE Synthetic_Minter SHALL release collateral equal to `lockedCollateral[user] * syntheticAmount / syntheticDebt[user]` — proportional to the tracked debt repaid and INDEPENDENT of the current price
+3. WHEN burn succeeds, THE Synthetic_Minter SHALL reduce the user's `lockedCollateral` and `syntheticDebt` accordingly and burn the sSPY from the caller
+4. WHEN burn succeeds, THE Synthetic_Minter SHALL emit `SyntheticBurned` event including amount, price used, and collateral released
+5. THE Synthetic_Minter SHALL require `syntheticAmount <= syntheticDebt[msg.sender]` (a caller may not repay more than their own debt) and `syntheticAmount <= balanceOf(msg.sender)`
+6. WHEN a full burn (repaying all debt) occurs, THE Synthetic_Minter SHALL release all of the user's locked collateral
 
 ### Requirement 10: Circuit Breaker and Pause Functionality
 
@@ -163,3 +166,19 @@ This specification defines a Synthetic Asset Minter that allows users to deposit
 3. THE Synthetic_Minter SHALL provide `getMaxMintable(address user)` returning maximum synthetic tokens user can mint
 4. THE Synthetic_Minter SHALL provide `getPositionValue(address user)` returning USD value of user's synthetic holdings
 5. THE Synthetic_Minter SHALL provide `getLatestPrice()` returning current stock price from CRE feed
+6. THE Synthetic_Minter SHALL provide `isLiquidatable(address user)` returning whether the position is below the liquidation threshold at the current price
+
+### Requirement 13: Liquidation
+
+**User Story:** As a third party, I want to liquidate under-collateralized positions, so that the protocol stays solvent when the SPY price rises against a minter's fixed collateral.
+
+#### Acceptance Criteria
+
+1. THE Synthetic_Minter SHALL store a configurable `liquidationThreshold` (default 120%), constrained to `[100, minCollateralizationRatio]`, with an owner-only setter emitting `RiskParamsUpdated`
+2. THE Synthetic_Minter SHALL store a configurable `liquidationBonusBps` (default 1000 = 10%), capped at `MAX_LIQUIDATION_BONUS_BPS` (3000 = 30%), with an owner-only setter
+3. THE Synthetic_Minter SHALL compute a position's collateralization ratio from its **current oracle-priced debt**, not its historical mint value
+4. WHEN `liquidate(address user, uint256 repayAmount)` is called and the position's CR is >= `liquidationThreshold`, THE Synthetic_Minter SHALL revert with "Position not liquidatable"
+5. WHEN liquidating, THE Synthetic_Minter SHALL burn `repayAmount` sSPY from the liquidator, seize collateral equal to the repaid debt value plus `liquidationBonusBps`, capped at the position's locked collateral, and pay it to the liquidator
+6. WHEN a liquidation repays the position's entire debt, THE Synthetic_Minter SHALL close the position and return any collateral remaining after the seizure to the borrower's available balance
+7. WHEN seized collateral cannot cover the repaid debt value (extreme price gap), THE Synthetic_Minter SHALL emit `BadDebtRealized` with the shortfall and SHALL NOT pay out more USDC than the position's locked collateral
+8. THE Synthetic_Minter SHALL update `lockedCollateral`, `totalLockedCollateral`, `syntheticDebt`, `totalSyntheticDebt`, and `totalCollateral` consistently, emit a `Liquidated` event, and preserve staleness checks, pause behavior, and reentrancy protection

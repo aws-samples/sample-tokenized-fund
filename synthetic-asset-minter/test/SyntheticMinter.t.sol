@@ -1069,11 +1069,11 @@ contract SyntheticMinterMintTest is Test {
         // Mint
         vm.prank(user);
         minter.mint(mintAmount);
-        
-        // Verify user received tokens (minus fee)
-        uint256 fee = (mintAmount * 30) / 10000; // 0.3% fee
-        uint256 expectedBalance = mintAmount - fee;
-        assertEq(syntheticToken.balanceOf(user), expectedBalance);
+
+        // The mint fee is now charged in USDC (not withheld in sSPY), so the user receives the
+        // full minted amount and their debt equals it.
+        assertEq(syntheticToken.balanceOf(user), mintAmount);
+        assertEq(minter.syntheticDebt(user), mintAmount);
     }
 
     function test_Mint_RevertsOnZeroAmount() public {
@@ -1108,12 +1108,10 @@ contract SyntheticMinterMintTest is Test {
         vm.prank(user);
         minter.depositCollateral(depositAmount);
         
-        uint256 fee = (mintAmount * 30) / 10000;
-        uint256 netAmount = mintAmount - fee;
-        
+        // User receives the full minted amount (fee is charged in USDC, not withheld).
         vm.prank(user);
         vm.expectEmit(true, false, false, false); // Only check indexed params
-        emit SyntheticMinted(user, netAmount, 18500000000, 0);
+        emit SyntheticMinted(user, mintAmount, 18500000000, 0);
         minter.mint(mintAmount);
     }
 
@@ -1136,7 +1134,13 @@ contract SyntheticMinterMintTest is Test {
         
         // Set up price feed with fuzzed price
         priceFeed.setPrice(price, block.timestamp);
-        
+
+        // Lower the liquidation threshold to the floor first so the fuzzed mint ratio (which can
+        // be as low as 100%) always satisfies the minCollateralizationRatio >= liquidationThreshold
+        // invariant enforced by the setter.
+        vm.prank(owner);
+        minter.setLiquidationThreshold(100);
+
         // Set collateralization ratio
         vm.prank(owner);
         minter.setMinCollateralizationRatio(collateralizationRatio);
@@ -1146,15 +1150,16 @@ contract SyntheticMinterMintTest is Test {
         uint256 expectedRequiredCollateral = (syntheticAmount * price * collateralizationRatio) 
             / (100 * 10**8 * 10**12);
         
-        // Deposit enough collateral (add extra to ensure we have enough)
-        uint256 depositAmount = expectedRequiredCollateral + 1000 * 10**6; // Extra buffer
-        
+        // Deposit enough collateral for the locked amount plus the USDC mint fee (add buffer)
+        uint256 feeUSDC = (syntheticAmount * price * minter.mintFeeBps()) / (10000 * 10**8 * 10**12);
+        uint256 depositAmount = expectedRequiredCollateral + feeUSDC + 1000 * 10**6; // Extra buffer
+
         usdc.mint(user, depositAmount);
         vm.prank(user);
         usdc.approve(address(minter), depositAmount);
         vm.prank(user);
         minter.depositCollateral(depositAmount);
-        
+
         // Record locked collateral before mint
         uint256 lockedBefore = minter.lockedCollateral(user);
         
@@ -1284,14 +1289,15 @@ contract SyntheticMinterInsufficientCollateralTest is Test {
         // Set up price feed with fuzzed price
         priceFeed.setPrice(price, block.timestamp);
         
-        // Calculate required collateral
+        // Calculate required collateral and USDC mint fee
         uint256 minCollateralizationRatio = minter.minCollateralizationRatio();
-        uint256 requiredCollateral = (syntheticAmount * price * minCollateralizationRatio) 
+        uint256 requiredCollateral = (syntheticAmount * price * minCollateralizationRatio)
             / (100 * 10**8 * 10**12);
-        
-        // Deposit exactly required + extra
-        uint256 depositAmount = requiredCollateral + extraCollateral;
-        
+        uint256 feeUSDC = (syntheticAmount * price * minter.mintFeeBps()) / (10000 * 10**8 * 10**12);
+
+        // Deposit exactly required + fee + extra
+        uint256 depositAmount = requiredCollateral + feeUSDC + extraCollateral;
+
         // Skip if deposit would be 0 (edge case)
         vm.assume(depositAmount > 0);
         
@@ -1367,61 +1373,56 @@ contract SyntheticMinterFeeDeductionTest is Test {
         vm.stopPrank();
     }
 
-    // ============ Property Test: Mint Fee Deduction ============
-    // Feature: cre-stablecoin-integration, Property 9: Mint Fee Deduction
-    // *For any* mint with `mintFeeBps > 0`, the user SHALL receive `syntheticAmount - (syntheticAmount * mintFeeBps / 10000)` tokens,
-    // and `accumulatedFees` SHALL increase by the fee amount.
+    // ============ Property Test: Mint Fee Charged in USDC ============
+    // Feature: cre-stablecoin-integration, Property 9: Mint Fee Charged in USDC
+    // *For any* mint with `mintFeeBps > 0`, the user SHALL receive the FULL `syntheticAmount` of
+    // sSPY (no tokens withheld), `accumulatedFees` (USDC) SHALL increase by the fee on the minted
+    // notional value, and that fee SHALL be deducted from the user's USDC collateral.
     // **Validates: Requirements 8.7**
 
-    function testFuzz_Property9_MintFeeDeduction(
+    function testFuzz_Property9_MintFeeChargedInUSDC(
         uint256 syntheticAmount,
         uint256 mintFeeBps
     ) public {
         // Bound inputs to reasonable ranges
         syntheticAmount = bound(syntheticAmount, 10000, 100 * 10**18); // Min 10000 wei to avoid rounding to 0
         mintFeeBps = bound(mintFeeBps, 0, 1000); // 0% to 10% (max allowed)
-        
+
         // Set mint fee
         vm.prank(owner);
         minter.setMintFeeBps(mintFeeBps);
-        
-        // Calculate required collateral and deposit enough
+
+        // Calculate required collateral + USDC fee, deposit enough
         uint256 price = 18500000000; // $185.00
         uint256 minCollateralizationRatio = minter.minCollateralizationRatio();
-        uint256 requiredCollateral = (syntheticAmount * price * minCollateralizationRatio) 
+        uint256 requiredCollateral = (syntheticAmount * price * minCollateralizationRatio)
             / (100 * 10**8 * 10**12);
-        uint256 depositAmount = requiredCollateral + 1000 * 10**6; // Extra buffer
-        
+        uint256 expectedFee = (syntheticAmount * price * mintFeeBps) / (10000 * 10**8 * 10**12);
+        uint256 depositAmount = requiredCollateral + expectedFee + 1000 * 10**6; // Extra buffer
+
         usdc.mint(user, depositAmount);
         vm.prank(user);
         usdc.approve(address(minter), depositAmount);
         vm.prank(user);
         minter.depositCollateral(depositAmount);
-        
-        // Record accumulated fees before mint
+
+        // Record state before mint
         uint256 feesBefore = minter.accumulatedFees();
-        
+        uint256 totalCollBefore = minter.totalCollateral(user);
+
         // Mint
         vm.prank(user);
         minter.mint(syntheticAmount);
-        
-        // Calculate expected values
-        uint256 expectedFee = (syntheticAmount * mintFeeBps) / 10000;
-        uint256 expectedNetAmount = syntheticAmount - expectedFee;
-        
-        // Verify user received correct amount (syntheticAmount - fee)
-        assertEq(
-            syntheticToken.balanceOf(user),
-            expectedNetAmount,
-            "User should receive syntheticAmount minus fee"
-        );
-        
-        // Verify accumulated fees increased by fee amount
-        assertEq(
-            minter.accumulatedFees(),
-            feesBefore + expectedFee,
-            "Accumulated fees should increase by fee amount"
-        );
+
+        // User receives the FULL minted amount (no sSPY withheld) and owes it as debt.
+        assertEq(syntheticToken.balanceOf(user), syntheticAmount, "User should receive the full minted amount");
+        assertEq(minter.syntheticDebt(user), syntheticAmount, "Debt equals the full minted amount");
+
+        // Accumulated fees (USDC) increase by the notional fee.
+        assertEq(minter.accumulatedFees(), feesBefore + expectedFee, "Accumulated USDC fees increase by fee");
+
+        // The fee is taken out of the user's collateral.
+        assertEq(minter.totalCollateral(user), totalCollBefore - expectedFee, "Fee is deducted from collateral");
     }
 
     function testFuzz_Property9_ZeroFeeGivesFullAmount(
@@ -1613,11 +1614,14 @@ contract SyntheticMinterBurnTest is Test {
         minter.burn(netMinted);
     }
 
-    // ============ Property Test: Burn Releases Proportional Collateral ============
-    // Feature: cre-stablecoin-integration, Property 10: Burn Releases Proportional Collateral
-    // *For any* user burning `burnAmount` of their `totalSynthetic` balance,
-    // the released collateral SHALL equal `lockedCollateral[user] * burnAmount / totalSynthetic`.
-    // **Validates: Requirements 9.2**
+    // ============ Property Test: Burn Repays Debt and Releases Proportional Collateral ============
+    // Feature: cre-stablecoin-integration, Property 10: Burn Releases Debt-Proportional Collateral
+    // Model B (CDP): burning is debt repayment, not an oracle-priced payout. *For any* user
+    // repaying `burnAmount` of their tracked debt, the released collateral SHALL equal
+    // `lockedCollateral[user] * burnAmount / syntheticDebt[user]` — denominated against the
+    // TRACKED DEBT, not the (transferable) token balance. This keeps the position's CR invariant
+    // and cannot be gamed by moving sSPY between addresses (see testDebtBasedReleaseSurvivesTransfer).
+    // **Validates: Requirements 9.2, 9.3**
 
     function testFuzz_Property10_BurnReleasesProportionalCollateral(
         uint256 depositAmount,
@@ -1628,47 +1632,83 @@ contract SyntheticMinterBurnTest is Test {
         depositAmount = bound(depositAmount, 1000 * 10**6, 10000000 * 10**6); // 1K to 10M USDC
         mintAmount = bound(mintAmount, 1 * 10**18, 100 * 10**18); // 1 to 100 tokens
         burnFraction = bound(burnFraction, 1, 100); // 1% to 100%
-        
+
         // Calculate required collateral to ensure we have enough
         uint256 price = 18500000000;
         uint256 minCollateralizationRatio = minter.minCollateralizationRatio();
-        uint256 requiredCollateral = (mintAmount * price * minCollateralizationRatio) 
+        uint256 requiredCollateral = (mintAmount * price * minCollateralizationRatio)
             / (100 * 10**8 * 10**12);
-        
+
         // Ensure deposit is enough
-        vm.assume(depositAmount >= requiredCollateral);
-        
+        // Deposit must cover both the locked collateral and the USDC mint fee.
+        vm.assume(depositAmount >= requiredCollateral + (mintAmount * price * minter.mintFeeBps()) / (10000 * 10**8 * 10**12));
+
         // Setup position
         uint256 netMinted = _setupUserWithPosition(user, depositAmount, mintAmount);
-        
+
         // Skip if no tokens minted (edge case)
         vm.assume(netMinted > 0);
-        
+
         // Calculate burn amount based on fraction
         uint256 burnAmount = (netMinted * burnFraction) / 100;
         vm.assume(burnAmount > 0);
-        
+
         // Record state before burn
         uint256 lockedBefore = minter.lockedCollateral(user);
-        uint256 balanceBefore = syntheticToken.balanceOf(user);
-        
-        // Calculate expected collateral release
-        // Formula: lockedCollateral * burnAmount / userBalance
-        uint256 expectedRelease = (lockedBefore * burnAmount) / balanceBefore;
-        
+        uint256 debtBefore = minter.syntheticDebt(user);
+
+        // Calculate expected collateral release against TRACKED DEBT
+        // Formula: lockedCollateral * burnAmount / syntheticDebt
+        uint256 expectedRelease = (lockedBefore * burnAmount) / debtBefore;
+
         // Burn
         vm.prank(user);
         minter.burn(burnAmount);
-        
+
         // Verify collateral released matches formula
         uint256 lockedAfter = minter.lockedCollateral(user);
         uint256 actualRelease = lockedBefore - lockedAfter;
-        
+
         assertEq(
             actualRelease,
             expectedRelease,
-            "Released collateral should equal lockedCollateral * burnAmount / totalSynthetic"
+            "Released collateral should equal lockedCollateral * burnAmount / syntheticDebt"
         );
+
+        // Debt must decrease by exactly the burned amount
+        assertEq(minter.syntheticDebt(user), debtBefore - burnAmount, "Debt should decrease by burn amount");
+    }
+
+    // Regression test for the old balanceOf-based release bug: a minter who transfers sSPY away
+    // must NOT be able to drain their locked collateral by burning a small remaining balance.
+    // Under debt-based accounting, burning is capped at the caller's own tracked debt, and the
+    // released collateral is proportional to that debt — so no over-release is possible.
+    function testDebtBasedReleaseSurvivesTransfer() public {
+        address other = address(0xBEEF);
+        uint256 depositAmount = 100000 * 10**6; // plenty of USDC
+        uint256 mintAmount = 10 * 10**18;        // mint 10 sSPY
+
+        uint256 netMinted = _setupUserWithPosition(user, depositAmount, mintAmount);
+        uint256 lockedBefore = minter.lockedCollateral(user);
+        uint256 debtBefore = minter.syntheticDebt(user);
+
+        // Transfer 90% of the minted sSPY away to another account.
+        uint256 sent = (netMinted * 9) / 10;
+        vm.prank(user);
+        syntheticToken.transfer(other, sent);
+
+        // Burning the small remaining balance may only release collateral proportional to that
+        // fraction of the DEBT — NOT the whole locked amount (which the old code would have done).
+        uint256 remaining = syntheticToken.balanceOf(user);
+        uint256 expectedRelease = (lockedBefore * remaining) / debtBefore;
+
+        vm.prank(user);
+        minter.burn(remaining);
+
+        uint256 actualRelease = lockedBefore - minter.lockedCollateral(user);
+        assertEq(actualRelease, expectedRelease, "Release must be proportional to debt, not balance");
+        assertTrue(minter.lockedCollateral(user) > 0, "Collateral for un-repaid debt must stay locked");
+        assertEq(minter.syntheticDebt(user), debtBefore - remaining, "Only repaid debt is cleared");
     }
 
     function testFuzz_Property10_FullBurnReleasesAllCollateral(
@@ -1685,7 +1725,8 @@ contract SyntheticMinterBurnTest is Test {
         uint256 requiredCollateral = (mintAmount * price * minCollateralizationRatio) 
             / (100 * 10**8 * 10**12);
         
-        vm.assume(depositAmount >= requiredCollateral);
+        // Deposit must cover both the locked collateral and the USDC mint fee.
+        vm.assume(depositAmount >= requiredCollateral + (mintAmount * price * minter.mintFeeBps()) / (10000 * 10**8 * 10**12));
         
         // Setup position
         uint256 netMinted = _setupUserWithPosition(user, depositAmount, mintAmount);
@@ -1821,7 +1862,8 @@ contract SyntheticMinterPartialBurnCRTest is Test {
         uint256 requiredCollateral = (mintAmount * price * minCollateralizationRatio) 
             / (100 * 10**8 * 10**12);
         
-        vm.assume(depositAmount >= requiredCollateral);
+        // Deposit must cover both the locked collateral and the USDC mint fee.
+        vm.assume(depositAmount >= requiredCollateral + (mintAmount * price * minter.mintFeeBps()) / (10000 * 10**8 * 10**12));
         
         // Setup position
         uint256 netMinted = _setupUserWithPosition(user, depositAmount, mintAmount);
@@ -1867,7 +1909,8 @@ contract SyntheticMinterPartialBurnCRTest is Test {
         uint256 requiredCollateral = (mintAmount * price * minCollateralizationRatio) 
             / (100 * 10**8 * 10**12);
         
-        vm.assume(depositAmount >= requiredCollateral);
+        // Deposit must cover both the locked collateral and the USDC mint fee.
+        vm.assume(depositAmount >= requiredCollateral + (mintAmount * price * minter.mintFeeBps()) / (10000 * 10**8 * 10**12));
         
         // Setup position
         uint256 netMinted = _setupUserWithPosition(user, depositAmount, mintAmount);
@@ -2024,7 +2067,8 @@ contract SyntheticMinterPauseBlocksOperationsTest is Test {
         uint256 requiredCollateral = (mintAmount * price * minCollateralizationRatio) 
             / (100 * 10**8 * 10**12);
         
-        vm.assume(depositAmount >= requiredCollateral);
+        // Deposit must cover both the locked collateral and the USDC mint fee.
+        vm.assume(depositAmount >= requiredCollateral + (mintAmount * price * minter.mintFeeBps()) / (10000 * 10**8 * 10**12));
         
         // Setup position while not paused
         uint256 netMinted = _setupUserWithPosition(user, depositAmount, mintAmount);
@@ -2086,7 +2130,8 @@ contract SyntheticMinterPauseBlocksOperationsTest is Test {
         uint256 requiredCollateral = (mintAmount * price * minCollateralizationRatio) 
             / (100 * 10**8 * 10**12);
         
-        vm.assume(depositAmount >= requiredCollateral);
+        // Deposit must cover both the locked collateral and the USDC mint fee.
+        vm.assume(depositAmount >= requiredCollateral + (mintAmount * price * minter.mintFeeBps()) / (10000 * 10**8 * 10**12));
         
         // Setup: mint USDC to caller and approve
         usdc.mint(caller, depositAmount);
@@ -2296,7 +2341,8 @@ contract SyntheticMinterViewFunctionsTest is Test {
             / (100 * 10**8 * 10**12);
         
         // Ensure deposit is enough
-        vm.assume(depositAmount >= requiredCollateral);
+        // Deposit must cover both the locked collateral and the USDC mint fee.
+        vm.assume(depositAmount >= requiredCollateral + (mintAmount * price * minter.mintFeeBps()) / (10000 * 10**8 * 10**12));
         
         // Setup position
         uint256 netMinted = _setupUserWithPosition(user, depositAmount, mintAmount);
@@ -2337,7 +2383,8 @@ contract SyntheticMinterViewFunctionsTest is Test {
         uint256 requiredCollateral = (mintAmount * price * minCollateralizationRatio) 
             / (100 * 10**8 * 10**12);
         
-        vm.assume(depositAmount >= requiredCollateral);
+        // Deposit must cover both the locked collateral and the USDC mint fee.
+        vm.assume(depositAmount >= requiredCollateral + (mintAmount * price * minter.mintFeeBps()) / (10000 * 10**8 * 10**12));
         
         // Setup position
         uint256 netMinted = _setupUserWithPosition(user, depositAmount, mintAmount);
@@ -2345,12 +2392,14 @@ contract SyntheticMinterViewFunctionsTest is Test {
         
         // Get the CR from the contract
         uint256 contractCR = minter.getUserCollateralRatio(user);
-        
-        // CR should be at least the minimum collateralization ratio
+
+        // CR should be at least the minimum collateralization ratio. `requiredCollateral` is
+        // floored and the CR is floored again, so the integer CR may sit one unit below the target
+        // purely from rounding; allow that 1-unit tolerance (well above the 120% liquidation line).
         assertGe(
-            contractCR,
+            contractCR + 1,
             minCollateralizationRatio,
-            "CR should be at least minCollateralizationRatio after mint"
+            "CR should be at least minCollateralizationRatio (within integer rounding) after mint"
         );
     }
 
@@ -2518,12 +2567,13 @@ contract SyntheticMinterMaxMintableBoundaryTest is Test {
         // Get max mintable from contract
         uint256 contractMaxMintable = minter.getMaxMintable(user);
         
-        // Calculate expected max mintable using the inverse formula
-        // maxMintable = (available * 100 * 10^PRICE_DECIMALS * 10^12) / (price * minCollateralizationRatio)
+        // Calculate expected max mintable using the inverse formula, accounting for the USDC fee:
+        // maxMintable = (available * BPS * 10^PRICE_DECIMALS * 10^12) / (price * (minCR*100 + mintFeeBps))
         uint256 available = minter.getAvailableCollateral(user);
         uint256 minCollateralizationRatio = minter.minCollateralizationRatio();
-        
-        uint256 expectedMaxMintable = (available * 100 * 10**8 * 10**12) / (price * minCollateralizationRatio);
+
+        uint256 expectedMaxMintable = (available * 10000 * 10**8 * 10**12)
+            / (price * (minCollateralizationRatio * 100 + minter.mintFeeBps()));
         
         // Verify the calculation matches
         assertEq(
@@ -2712,9 +2762,9 @@ contract SyntheticMinterFeeCollectionTest is Test {
         // Owner collects fees
         vm.prank(owner);
         minter.collectFees();
-        
-        // Verify fees were transferred to feeRecipient
-        assertEq(syntheticToken.balanceOf(feeRecipient), accumulatedFees);
+
+        // Verify fees (USDC) were transferred to feeRecipient
+        assertEq(usdc.balanceOf(feeRecipient), accumulatedFees);
         assertEq(minter.accumulatedFees(), 0);
     }
 
@@ -2723,16 +2773,16 @@ contract SyntheticMinterFeeCollectionTest is Test {
         uint256 depositAmount = 10000 * 10**6;
         uint256 mintAmount = 1 * 10**18;
         _setupUserWithMintedTokens(user, depositAmount, mintAmount);
-        
+
         uint256 accumulatedFees = minter.accumulatedFees();
         assertTrue(accumulatedFees > 0, "Fees should be accumulated");
-        
+
         // Fee recipient collects fees
         vm.prank(feeRecipient);
         minter.collectFees();
-        
-        // Verify fees were transferred
-        assertEq(syntheticToken.balanceOf(feeRecipient), accumulatedFees);
+
+        // Verify fees (USDC) were transferred
+        assertEq(usdc.balanceOf(feeRecipient), accumulatedFees);
         assertEq(minter.accumulatedFees(), 0);
     }
 
@@ -2795,21 +2845,21 @@ contract SyntheticMinterFeeCollectionTest is Test {
         uint256 mintAmount = 10 * 10**18; // 10 synthetic tokens
         _setupUserWithMintedTokens(user, depositAmount, mintAmount);
         
-        // Calculate expected fee: mintAmount * mintFeeBps / BPS_DENOMINATOR
-        // Default mintFeeBps = 30 (0.3%)
-        uint256 expectedFee = (mintAmount * 30) / 10000;
-        
+        // Expected fee is charged in USDC on the minted notional value at the feed price ($185).
+        // Default mintFeeBps = 30 (0.3%).
+        uint256 expectedFee = (mintAmount * 18500000000 * 30) / (10000 * 10**8 * 10**12);
+
         uint256 accumulatedFees = minter.accumulatedFees();
         assertEq(accumulatedFees, expectedFee, "Accumulated fees should match expected");
-        
-        uint256 recipientBalanceBefore = syntheticToken.balanceOf(feeRecipient);
-        
+
+        uint256 recipientBalanceBefore = usdc.balanceOf(feeRecipient);
+
         // Collect fees
         vm.prank(owner);
         minter.collectFees();
-        
-        // Verify correct amount transferred
-        uint256 recipientBalanceAfter = syntheticToken.balanceOf(feeRecipient);
+
+        // Verify correct USDC amount transferred
+        uint256 recipientBalanceAfter = usdc.balanceOf(feeRecipient);
         assertEq(recipientBalanceAfter - recipientBalanceBefore, expectedFee);
     }
 
@@ -2840,15 +2890,15 @@ contract SyntheticMinterFeeCollectionTest is Test {
         // Fees should have increased
         assertTrue(feesAfterSecondMint > feesAfterFirstMint, "Fees should accumulate");
         
-        // Expected total fees
-        uint256 expectedTotalFees = ((mintAmount1 + mintAmount2) * 30) / 10000;
+        // Expected total fees (USDC) on the combined notional value at the feed price ($185)
+        uint256 expectedTotalFees = ((mintAmount1 + mintAmount2) * 18500000000 * 30) / (10000 * 10**8 * 10**12);
         assertEq(feesAfterSecondMint, expectedTotalFees);
-        
+
         // Collect all fees
         vm.prank(feeRecipient);
         minter.collectFees();
-        
-        assertEq(syntheticToken.balanceOf(feeRecipient), expectedTotalFees);
+
+        assertEq(usdc.balanceOf(feeRecipient), expectedTotalFees);
         assertEq(minter.accumulatedFees(), 0);
     }
 
@@ -2870,19 +2920,512 @@ contract SyntheticMinterFeeCollectionTest is Test {
         uint256 fees1 = minter.accumulatedFees();
         vm.prank(owner);
         minter.collectFees();
-        
-        assertEq(syntheticToken.balanceOf(feeRecipient), fees1);
-        
+
+        assertEq(usdc.balanceOf(feeRecipient), fees1);
+
         // Second mint and collect
         uint256 mintAmount2 = 3 * 10**18;
         vm.prank(user);
         minter.mint(mintAmount2);
-        
+
         uint256 fees2 = minter.accumulatedFees();
         vm.prank(owner);
         minter.collectFees();
-        
-        // Fee recipient should have both collections
-        assertEq(syntheticToken.balanceOf(feeRecipient), fees1 + fees2);
+
+        // Fee recipient should have both collections (USDC)
+        assertEq(usdc.balanceOf(feeRecipient), fees1 + fees2);
+    }
+}
+
+
+/// @notice Model B (CDP) settlement, liquidation, solvency and end-to-end tests.
+/// @dev These tests encode the corrected economic model: burning is debt repayment (the minter
+///      is the issuer/short), settlement is price-INDEPENDENT (a minter reclaims only the USDC
+///      they locked), collateralization is marked to the live oracle price, and unhealthy
+///      positions are liquidated. They replace the assumption that burning tracks SPY P&L.
+contract SyntheticMinterCDPTest is Test {
+    SyntheticMinter public minter;
+    SyntheticToken public syntheticToken;
+    MockUSDC public usdc;
+    MockPriceFeed public priceFeed;
+    MockCollateralMonitor public collateralMonitor;
+
+    address public owner = address(1);
+    address public feeRecipient = address(2);
+    address public user = address(3);
+    address public liquidator = address(4);
+
+    uint256 constant PX = 100 * 10**8; // $100.00 baseline oracle price
+
+    event Liquidated(
+        address indexed user,
+        address indexed liquidator,
+        uint256 debtRepaid,
+        uint256 collateralSeized,
+        uint256 priceUsed
+    );
+    event BadDebtRealized(address indexed user, uint256 shortfall);
+
+    function setUp() public {
+        vm.warp(1000000);
+        usdc = new MockUSDC();
+
+        vm.startPrank(owner);
+        syntheticToken = new SyntheticToken("Synthetic S&P 500", "sSPY", owner);
+        minter = new SyntheticMinter(address(usdc), address(syntheticToken), owner, feeRecipient);
+        syntheticToken.setMinter(address(minter));
+        vm.stopPrank();
+
+        priceFeed = new MockPriceFeed();
+        collateralMonitor = new MockCollateralMonitor();
+        _setPrice(PX);
+
+        vm.startPrank(owner);
+        minter.setPriceFeed(address(priceFeed));
+        minter.setCollateralMonitor(address(collateralMonitor));
+        // These tests target settlement/liquidation accounting, not fees; zero the mint fee so
+        // collateral figures are exact. (Fee behavior is covered in the fee-specific suites.)
+        minter.setMintFeeBps(0);
+        vm.stopPrank();
+    }
+
+    // ---- helpers ----
+
+    function _setPrice(uint256 price) internal {
+        priceFeed.setPrice(price, block.timestamp);
+        ICRECollateralMonitor.CollateralData memory data = ICRECollateralMonitor.CollateralData({
+            price: price,
+            reserves: 1000000 * 10**6,
+            ratio: 200,
+            timestamp: block.timestamp,
+            isHealthy: true
+        });
+        collateralMonitor.setData(data);
+    }
+
+    function _open(address who, uint256 deposit, uint256 mintAmount) internal returns (uint256 netMinted) {
+        usdc.mint(who, deposit);
+        vm.prank(who);
+        usdc.approve(address(minter), deposit);
+        vm.prank(who);
+        minter.depositCollateral(deposit);
+        vm.prank(who);
+        minter.mint(mintAmount);
+        netMinted = syntheticToken.balanceOf(who);
+    }
+
+    function _debtValueUSDC(uint256 debt, uint256 price) internal pure returns (uint256) {
+        return (debt * price) / (10**8 * 10**12);
+    }
+
+    // ============ Settlement: burning is price-INDEPENDENT debt repayment ============
+
+    function test_FullBurn_SPYUnchanged_ReturnsExactlyLocked() public {
+        uint256 net = _open(user, 2000 * 10**6, 10 * 10**18);
+        uint256 locked = minter.lockedCollateral(user);
+
+        vm.prank(user);
+        minter.burn(net);
+
+        // All locked collateral released, debt cleared, total collateral intact.
+        assertEq(minter.lockedCollateral(user), 0);
+        assertEq(minter.syntheticDebt(user), 0);
+        assertEq(minter.totalCollateral(user), 2000 * 10**6);
+        assertEq(minter.getAvailableCollateral(user), 2000 * 10**6);
+        assertGt(locked, 0);
+    }
+
+    function test_FullBurn_AfterSPYRises_ReleasesSameLocked_NoLongPayout() public {
+        uint256 net = _open(user, 2000 * 10**6, 10 * 10**18);
+        uint256 lockedBefore = minter.lockedCollateral(user);
+
+        // SPY rises 40%. A long holder would gain; the MINTER (short) does not get paid more.
+        _setPrice(140 * 10**8);
+
+        vm.prank(user);
+        minter.burn(net);
+
+        // Released collateral equals what was locked — settlement did not track SPY upward.
+        assertEq(minter.lockedCollateral(user), 0);
+        assertEq(minter.totalCollateral(user), 2000 * 10**6, "minter reclaims only locked USDC, no long P&L");
+        assertGt(lockedBefore, 0);
+    }
+
+    function test_FullBurn_AfterSPYFalls_ReleasesSameLocked() public {
+        uint256 net = _open(user, 2000 * 10**6, 10 * 10**18);
+        _setPrice(60 * 10**8); // -40%
+
+        vm.prank(user);
+        minter.burn(net);
+
+        assertEq(minter.lockedCollateral(user), 0);
+        assertEq(minter.totalCollateral(user), 2000 * 10**6);
+    }
+
+    function test_PartialBurn_AfterPriceChange_KeepsCRInvariant() public {
+        uint256 net = _open(user, 2000 * 10**6, 10 * 10**18);
+        _setPrice(130 * 10**8);
+
+        uint256 crBefore = minter.getUserCollateralRatio(user);
+        uint256 lockedBefore = minter.lockedCollateral(user);
+        uint256 debtBefore = minter.syntheticDebt(user);
+
+        uint256 burnAmount = net / 2;
+        vm.prank(user);
+        minter.burn(burnAmount);
+
+        // Proportional release against tracked debt keeps CR constant.
+        uint256 crAfter = minter.getUserCollateralRatio(user);
+        assertApproxEqRel(crAfter, crBefore, 1e15, "partial burn should keep CR ~constant"); // 0.1%
+        uint256 expectedRelease = (lockedBefore * burnAmount) / debtBefore;
+        assertEq(lockedBefore - minter.lockedCollateral(user), expectedRelease);
+    }
+
+    function test_Settlement_UsesCurrentPriceForCR_NotForPayout() public {
+        _open(user, 2000 * 10**6, 10 * 10**18);
+        uint256 crAt100 = minter.getUserCollateralRatio(user);
+        _setPrice(150 * 10**8);
+        uint256 crAt150 = minter.getUserCollateralRatio(user);
+        // CR is marked to the live price (falls as SPY rises)...
+        assertLt(crAt150, crAt100, "CR must reflect current oracle price");
+        // ...but the collateral released on burn is driven by locked/debt, not price.
+        uint256 locked = minter.lockedCollateral(user);
+        uint256 debt = minter.syntheticDebt(user);
+        uint256 half = debt / 2;
+        vm.prank(user);
+        minter.burn(half);
+        assertEq(locked - minter.lockedCollateral(user), (locked * half) / debt);
+    }
+
+    // ============ Liquidation eligibility ============
+
+    function test_NotLiquidatable_AboveThreshold() public {
+        _open(user, 2000 * 10**6, 10 * 10**18);
+        // At $100, CR ~150% > 120% threshold.
+        assertFalse(minter.isLiquidatable(user));
+
+        // A modest rise that keeps CR above threshold is still not liquidatable.
+        _setPrice(115 * 10**8); // CR ~130%
+        assertFalse(minter.isLiquidatable(user));
+
+        // Attempting to liquidate must revert.
+        uint256 net = syntheticToken.balanceOf(user);
+        vm.prank(user);
+        syntheticToken.transfer(liquidator, net);
+        vm.prank(liquidator);
+        vm.expectRevert("Position not liquidatable");
+        minter.liquidate(user, net);
+    }
+
+    function test_Liquidatable_BelowThreshold() public {
+        _open(user, 2000 * 10**6, 10 * 10**18);
+        _setPrice(130 * 10**8); // CR ~115% < 120%
+        assertTrue(minter.isLiquidatable(user));
+    }
+
+    // ============ Liquidation restores safety or closes the position ============
+
+    function test_PartialLiquidation_RestoresSafety() public {
+        uint256 net = _open(user, 2000 * 10**6, 10 * 10**18);
+        _setPrice(130 * 10**8); // CR ~115.7%, above (100% + 10% bonus) so liquidation helps
+
+        // Give the liquidator the sSPY to repay with.
+        vm.prank(user);
+        syntheticToken.transfer(liquidator, net);
+
+        uint256 crBefore = minter.getUserCollateralRatio(user);
+        assertLt(crBefore, minter.liquidationThreshold());
+
+        // Repay half the debt.
+        vm.prank(liquidator);
+        minter.liquidate(user, net / 2);
+
+        uint256 crAfter = minter.getUserCollateralRatio(user);
+        assertGt(crAfter, crBefore, "partial liquidation must improve CR");
+        assertGe(crAfter, minter.liquidationThreshold(), "position restored to safety");
+        assertFalse(minter.isLiquidatable(user));
+    }
+
+    function test_FullLiquidation_ClosesPosition_ReturnsResidualEquity() public {
+        uint256 net = _open(user, 2000 * 10**6, 10 * 10**18);
+        uint256 lockedBefore = minter.lockedCollateral(user);
+        _setPrice(130 * 10**8);
+
+        vm.prank(user);
+        syntheticToken.transfer(liquidator, net);
+
+        uint256 price = minter.getLatestPrice();
+        uint256 repayValue = _debtValueUSDC(net, price);
+        uint256 expectedSeize = repayValue + (repayValue * minter.liquidationBonusBps()) / 10000;
+        assertLt(expectedSeize, lockedBefore, "seize should be less than locked in this regime");
+
+        uint256 liqUsdcBefore = usdc.balanceOf(liquidator);
+        vm.prank(liquidator);
+        minter.liquidate(user, net);
+
+        // Debt cleared, position fully closed.
+        assertEq(minter.syntheticDebt(user), 0);
+        assertEq(minter.lockedCollateral(user), 0);
+        // Liquidator received exactly the seize amount.
+        assertEq(usdc.balanceOf(liquidator) - liqUsdcBefore, expectedSeize);
+        // Residual equity (available + unlocked remainder of locked) returned to borrower.
+        // total = 2000; seize removed from total; remainder is all available now.
+        assertEq(minter.totalCollateral(user), 2000 * 10**6 - expectedSeize);
+        assertEq(minter.getAvailableCollateral(user), 2000 * 10**6 - expectedSeize);
+    }
+
+    // ============ Liquidator incentive is bounded and accounted ============
+
+    function test_LiquidatorBonus_Applied_And_Bounded() public {
+        uint256 net = _open(user, 2000 * 10**6, 10 * 10**18);
+        _setPrice(125 * 10**8); // CR ~120.3%? push just below
+
+        // Ensure below threshold; if not, bump price a touch.
+        if (!minter.isLiquidatable(user)) {
+            _setPrice(128 * 10**8);
+        }
+        assertTrue(minter.isLiquidatable(user));
+
+        vm.prank(user);
+        syntheticToken.transfer(liquidator, net);
+
+        uint256 price = minter.getLatestPrice();
+        uint256 repay = net / 4;
+        uint256 repayValue = _debtValueUSDC(repay, price);
+        uint256 expectedSeize = repayValue + (repayValue * minter.liquidationBonusBps()) / 10000;
+
+        uint256 liqBefore = usdc.balanceOf(liquidator);
+        vm.prank(liquidator);
+        minter.liquidate(user, repay);
+        uint256 got = usdc.balanceOf(liquidator) - liqBefore;
+
+        assertEq(got, expectedSeize, "liquidator receives repay value + bonus");
+        // Bonus is exactly liquidationBonusBps of repay value — provably bounded.
+        assertEq(got - repayValue, (repayValue * minter.liquidationBonusBps()) / 10000);
+    }
+
+    function test_SetLiquidationBonus_RejectsAboveMax() public {
+        uint256 tooHigh = minter.MAX_LIQUIDATION_BONUS_BPS() + 1;
+        vm.prank(owner);
+        vm.expectRevert("Bonus exceeds maximum");
+        minter.setLiquidationBonusBps(tooHigh);
+    }
+
+    function test_SetLiquidationThreshold_Bounds() public {
+        uint256 tooHigh = minter.minCollateralizationRatio() + 1;
+
+        vm.prank(owner);
+        vm.expectRevert("Threshold below 100%");
+        minter.setLiquidationThreshold(99);
+
+        vm.prank(owner);
+        vm.expectRevert("Above min collateralization");
+        minter.setLiquidationThreshold(tooHigh);
+    }
+
+    function test_SetMinCR_CannotDropBelowLiquidationThreshold() public {
+        uint256 tooLow = minter.liquidationThreshold() - 1;
+        vm.prank(owner);
+        vm.expectRevert("Below liquidation threshold");
+        minter.setMinCollateralizationRatio(tooLow);
+    }
+
+    // ============ Extreme price gap / bad debt ============
+
+    function test_ExtremePriceGap_SeizesAllCollateral_EmitsBadDebt() public {
+        uint256 net = _open(user, 2000 * 10**6, 10 * 10**18);
+        uint256 lockedBefore = minter.lockedCollateral(user);
+
+        // SPY doubles: debt value now exceeds the locked collateral entirely.
+        _setPrice(200 * 10**8);
+
+        vm.prank(user);
+        syntheticToken.transfer(liquidator, net);
+
+        uint256 price = minter.getLatestPrice();
+        uint256 repayValue = _debtValueUSDC(net, price);
+        assertGt(repayValue, lockedBefore, "position is underwater");
+
+        uint256 liqBefore = usdc.balanceOf(liquidator);
+        vm.prank(liquidator);
+        vm.expectEmit(true, false, false, true);
+        emit BadDebtRealized(user, repayValue - lockedBefore);
+        minter.liquidate(user, net);
+
+        // Contract never pays out more than the locked collateral.
+        assertEq(usdc.balanceOf(liquidator) - liqBefore, lockedBefore);
+        assertEq(minter.syntheticDebt(user), 0);
+        assertEq(minter.lockedCollateral(user), 0);
+    }
+
+    // ============ Cannot withdraw collateral backing a liability ============
+
+    function test_CannotWithdrawCollateralBackingDebt() public {
+        _open(user, 2000 * 10**6, 10 * 10**18);
+        uint256 available = minter.getAvailableCollateral(user);
+        // Withdrawing more than available (i.e. into locked collateral) must revert.
+        vm.prank(user);
+        vm.expectRevert("Insufficient available collateral");
+        minter.withdrawCollateral(available + 1);
+
+        // Withdrawing exactly the available amount is fine and leaves locked intact.
+        uint256 lockedBefore = minter.lockedCollateral(user);
+        vm.prank(user);
+        minter.withdrawCollateral(available);
+        assertEq(minter.lockedCollateral(user), lockedBefore);
+        assertEq(minter.getAvailableCollateral(user), 0);
+    }
+
+    // ============ Consistency after full / partial close ============
+
+    function test_FullClose_ConsistentBalances() public {
+        uint256 net = _open(user, 2000 * 10**6, 10 * 10**18);
+        vm.prank(user);
+        minter.burn(net);
+
+        assertEq(minter.syntheticDebt(user), 0);
+        assertEq(minter.totalSyntheticDebt(), 0);
+        assertEq(minter.lockedCollateral(user), 0);
+        assertEq(minter.totalLockedCollateral(), 0);
+        // Contract still holds all of the user's (now fully available) collateral.
+        assertEq(usdc.balanceOf(address(minter)), minter.totalCollateral(user));
+    }
+
+    function test_PartialClose_ConsistentBalances() public {
+        uint256 net = _open(user, 2000 * 10**6, 10 * 10**18);
+        uint256 lockedBefore = minter.lockedCollateral(user);
+        uint256 debtBefore = minter.syntheticDebt(user);
+
+        vm.prank(user);
+        minter.burn(net / 3);
+
+        // Global aggregates track per-user state exactly (single user).
+        assertEq(minter.totalSyntheticDebt(), minter.syntheticDebt(user));
+        assertEq(minter.totalLockedCollateral(), minter.lockedCollateral(user));
+        assertEq(minter.syntheticDebt(user), debtBefore - net / 3);
+        assertEq(minter.lockedCollateral(user), lockedBefore - (lockedBefore * (net / 3)) / debtBefore);
+        assertEq(usdc.balanceOf(address(minter)), minter.totalCollateral(user));
+    }
+
+    // ============ Staleness still blocks price-dependent ops ============
+
+    function test_StaleFeed_BlocksBurn() public {
+        uint256 net = _open(user, 2000 * 10**6, 10 * 10**18);
+        // Advance time past the staleness window without refreshing the feed.
+        vm.warp(block.timestamp + 3601);
+        vm.prank(user);
+        vm.expectRevert("Price feed stale");
+        minter.burn(net);
+    }
+
+    function test_StaleFeed_BlocksLiquidation() public {
+        uint256 net = _open(user, 2000 * 10**6, 10 * 10**18);
+        _setPrice(130 * 10**8);
+        vm.prank(user);
+        syntheticToken.transfer(liquidator, net);
+        vm.warp(block.timestamp + 3601);
+        vm.prank(liquidator);
+        vm.expectRevert("Price feed stale");
+        minter.liquidate(user, net);
+    }
+
+    // ============ Pause and access control on liquidation ============
+
+    function test_Pause_BlocksLiquidation() public {
+        uint256 net = _open(user, 2000 * 10**6, 10 * 10**18);
+        _setPrice(130 * 10**8);
+        vm.prank(user);
+        syntheticToken.transfer(liquidator, net);
+        vm.prank(owner);
+        minter.pause();
+        vm.prank(liquidator);
+        vm.expectRevert(abi.encodeWithSignature("EnforcedPause()"));
+        minter.liquidate(user, net);
+    }
+
+    function testFuzz_NonOwnerCannotSetLiquidationParams(address caller) public {
+        vm.assume(caller != owner);
+        vm.prank(caller);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", caller));
+        minter.setLiquidationThreshold(110);
+
+        vm.prank(caller);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", caller));
+        minter.setLiquidationBonusBps(500);
+    }
+
+    // ============ End-to-end: mint at X, move to Y, liquidate at Y ============
+
+    function test_EndToEnd_MintAtX_LiquidateAtY() public {
+        // Mint at X = $100.
+        uint256 net = _open(user, 2000 * 10**6, 10 * 10**18);
+        uint256 debtAtMint = minter.syntheticDebt(user);
+        uint256 lockedAtMint = minter.lockedCollateral(user);
+        assertEq(usdc.balanceOf(address(minter)), 2000 * 10**6);
+
+        // Price moves to Y = $135 (CR falls below threshold).
+        _setPrice(135 * 10**8);
+        assertTrue(minter.isLiquidatable(user));
+
+        // Liquidator acquires the sSPY and fully liquidates.
+        vm.prank(user);
+        syntheticToken.transfer(liquidator, net);
+
+        uint256 price = minter.getLatestPrice();
+        uint256 repayValue = _debtValueUSDC(debtAtMint, price);
+        uint256 expectedSeize = repayValue + (repayValue * minter.liquidationBonusBps()) / 10000;
+        if (expectedSeize > lockedAtMint) expectedSeize = lockedAtMint;
+
+        vm.prank(liquidator);
+        minter.liquidate(user, debtAtMint);
+
+        // Resulting balances are internally consistent.
+        assertEq(minter.syntheticDebt(user), 0, "debt cleared");
+        assertEq(syntheticToken.balanceOf(liquidator), 0, "liquidator sSPY burned");
+        assertEq(minter.lockedCollateral(user), 0, "no locked collateral remains");
+        assertEq(usdc.balanceOf(liquidator), expectedSeize, "liquidator paid seize amount");
+        // Contract USDC still equals the borrower's remaining collateral (solvency).
+        assertEq(usdc.balanceOf(address(minter)), minter.totalCollateral(user));
+        assertEq(usdc.balanceOf(address(minter)), 2000 * 10**6 - expectedSeize);
+    }
+
+    // ============ Solvency invariant: contract USDC >= locked collateral ============
+
+    function testFuzz_Solvency_ContractHoldsAtLeastLockedCollateral(
+        uint256 deposit,
+        uint256 mintAmount,
+        uint256 newPrice,
+        uint256 repayFraction
+    ) public {
+        deposit = bound(deposit, 1000 * 10**6, 1000000 * 10**6);
+        mintAmount = bound(mintAmount, 1 * 10**18, 100 * 10**18);
+        newPrice = bound(newPrice, 1 * 10**8, 100000 * 10**8);
+        repayFraction = bound(repayFraction, 1, 100);
+
+        uint256 required = (mintAmount * PX * minter.minCollateralizationRatio()) / (100 * 10**8 * 10**12);
+        vm.assume(deposit >= required);
+
+        uint256 net = _open(user, deposit, mintAmount);
+        vm.assume(net > 0);
+
+        // Contract must physically hold at least the collateral it reports as locked.
+        assertGe(usdc.balanceOf(address(minter)), minter.totalLockedCollateral());
+
+        _setPrice(newPrice);
+
+        // If liquidatable, liquidate a fraction and re-check solvency.
+        if (minter.isLiquidatable(user)) {
+            vm.prank(user);
+            syntheticToken.transfer(liquidator, net);
+            uint256 repay = (minter.syntheticDebt(user) * repayFraction) / 100;
+            if (repay > 0 && syntheticToken.balanceOf(liquidator) >= repay) {
+                vm.prank(liquidator);
+                minter.liquidate(user, repay);
+            }
+        }
+
+        // Core solvency invariant holds after any liquidation.
+        assertGe(usdc.balanceOf(address(minter)), minter.totalLockedCollateral());
+        assertGe(minter.totalCollateral(user), minter.lockedCollateral(user));
     }
 }

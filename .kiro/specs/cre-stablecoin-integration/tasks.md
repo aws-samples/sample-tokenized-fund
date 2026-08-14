@@ -320,8 +320,24 @@ This plan implements a Synthetic Asset Minter that allows users to deposit USDC 
     - Burn tokens and verify collateral release
     - _Requirements: 4, 7, 8_
 
+- [x] 18. Resolve economic model and add liquidation
+  - [x] 18.1 Track minted debt separately from token balance (`syntheticDebt`, `totalSyntheticDebt`)
+    - Fixes the burn accounting so collateral release is keyed on tracked debt, not the transferable `balanceOf`
+    - _Requirements: 9.2, 9.3, 9.5_
+  - [x] 18.2 Add liquidation with a configurable `liquidationThreshold` and bounded `liquidationBonusBps`
+    - `liquidate(address,uint256)` repays debt, seizes collateral + bonus (capped at locked), closes fully-repaid positions, surfaces bad debt
+    - CR computed from current oracle-priced debt; owner-only bounded setters
+    - _Requirements: 13.1–13.8_
+  - [x] 18.3 Charge the mint fee in USDC instead of sSPY
+    - Fee is taken from the minter's collateral and accrues/pays in USDC; `collectFees()` transfers USDC (mints no sSPY), so `totalSupply == totalSyntheticDebt`. `getMaxMintable` accounts for the fee.
+    - _Requirements: 8.7_
+  - [x] 18.4 Replace/extend tests to encode the CDP model
+    - Reframe Property 10 to debt-proportional release; add settlement (SPY unchanged/up/down), liquidation eligibility, improve-or-close, bounded incentive, extreme-gap/bad-debt, staleness, pause, solvency invariant, and end-to-end (mint at X → liquidate at Y) tests
+    - _Requirements: 9, 13_
+
 ## Notes
 
+- **Economic model resolved to collateralized debt (CDP).** The original docs described "long synthetic exposure" for the minter, but the code released collateral proportionally and price-independently. True long-SPY exposure for the minter cannot be delivered by this self-collateralized architecture without a counterparty/sponsor/hedge (it would consume other users' collateral). The coherent, solvent model is CDP issuance: burning repays debt and unlocks the minter's own collateral; the SPY price marks collateralization and triggers liquidation. See requirements Introduction and Requirement 13.
 - All tasks are required including property-based tests
 - Each task references specific requirements for traceability
 - Checkpoints ensure incremental validation

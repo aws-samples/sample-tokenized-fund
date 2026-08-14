@@ -2,6 +2,8 @@
 
 A synthetic asset minting protocol that allows users to deposit USDC as collateral and mint tokenized synthetic ETFs (sSPY for the S&P 500). The system integrates AWS serverless infrastructure with Chainlink Runtime Environment (CRE) for real-time stock price feeds and protocol health monitoring.
 
+**Economic model:** collateralized debt (CDP). Minted sSPY is an over-collateralized debt the minter repays by burning to reclaim their locked USDC — burning is proportional to the debt repaid and independent of the SPY price, not a price-based payout. Positions are marked to the live oracle price and liquidated if they fall below the liquidation threshold. The contract holds only minters' own USDC, so it never pays minters SPY gains (that would consume other users' collateral); long-SPY exposure accrues to sSPY holders.
+
 ## Components
 
 ### 1. AWS Lambda Backend (`sample-cre-pricefeeds-por/price-feed-por-dynamodb-crud/`)
@@ -29,7 +31,9 @@ Solidity smart contracts for the minting protocol:
 
 ## Key Features
 
-- 150% minimum collateralization ratio
+- 150% minimum collateralization ratio to open/increase a position
+- Liquidation of positions below the liquidation threshold (default 120%), with a bounded liquidator bonus (default 10%, max 30%)
+- Debt tracked separately from the sSPY token balance so transfers cannot distort collateral release
 - Configurable mint fees (default 0.3%)
 - Staleness checks on oracle data
 - Circuit breaker for emergency pauses
