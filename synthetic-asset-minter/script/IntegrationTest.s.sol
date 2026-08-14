@@ -112,16 +112,17 @@ contract IntegrationTest is Script {
         console.log("Locked collateral before:", lockedCollateralBefore);
         console.log("Locked collateral after:", lockedCollateralAfter);
         
-        // Account for mint fee (0.3% = 30 bps)
+        // Mint fee is charged in USDC (on the minted notional value), not withheld in sSPY, so the
+        // user receives the full mintAmount. Report the fee in USDC for visibility.
         uint256 mintFeeBps = minter.mintFeeBps();
-        uint256 expectedFee = (mintAmount * mintFeeBps) / 10000;
-        uint256 expectedNetAmount = mintAmount - expectedFee;
-        
+        uint256 price = minter.getLatestPrice();
+        uint256 expectedFeeUSDC = (mintAmount * price * mintFeeBps) / (10000 * 10**8 * 10**12);
+
         console.log("Mint fee (bps):", mintFeeBps);
-        console.log("Expected fee:", expectedFee);
-        console.log("Expected net amount:", expectedNetAmount);
-        
-        require(syntheticBalanceAfter >= syntheticBalanceBefore, "Synthetic balance should increase");
+        console.log("Expected fee (USDC):", expectedFeeUSDC);
+        console.log("sSPY received (full amount):", syntheticBalanceAfter - syntheticBalanceBefore);
+
+        require(syntheticBalanceAfter == syntheticBalanceBefore + mintAmount, "User should receive full mint amount");
         require(lockedCollateralAfter > lockedCollateralBefore, "Locked collateral should increase");
         console.log("PASS: Synthetic tokens minted correctly");
         console.log("");

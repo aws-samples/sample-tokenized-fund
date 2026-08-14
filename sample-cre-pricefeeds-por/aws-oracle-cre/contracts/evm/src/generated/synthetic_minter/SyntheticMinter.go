@@ -51,7 +51,7 @@ var (
 )
 
 var SyntheticMinterMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"_usdc\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_syntheticToken\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_initialOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_feeRecipient\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"BPS_DENOMINATOR\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"PRICE_DECIMALS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SYNTHETIC_DECIMALS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"USDC_DECIMALS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"accumulatedFees\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"burn\",\"inputs\":[{\"name\":\"syntheticAmount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"collateralMonitor\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractICRECollateralMonitor\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"collectFees\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"depositCollateral\",\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"feeRecipient\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getAvailableCollateral\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"available\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCollateralValue\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"totalLockedCollateral\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getLatestPrice\",\"inputs\":[],\"outputs\":[{\"name\":\"price\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxMintable\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"maxMintable\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getPositionValue\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getUserCollateralRatio\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"ratio\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"lockedCollateral\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"minCollateralizationRatio\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"mint\",\"inputs\":[{\"name\":\"syntheticAmount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"mintFeeBps\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"priceFeed\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractICREPriceFeed\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setCollateralMonitor\",\"inputs\":[{\"name\":\"_collateralMonitor\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setFeeRecipient\",\"inputs\":[{\"name\":\"_feeRecipient\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMinCollateralizationRatio\",\"inputs\":[{\"name\":\"_minCollateralizationRatio\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMintFeeBps\",\"inputs\":[{\"name\":\"_mintFeeBps\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setPriceFeed\",\"inputs\":[{\"name\":\"_priceFeed\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setStalenessWindow\",\"inputs\":[{\"name\":\"_stalenessWindow\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"stalenessWindow\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"syntheticToken\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractSyntheticToken\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"totalCollateral\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"usdc\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"withdrawCollateral\",\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"CollateralDeposited\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"priceAtDeposit\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"CollateralWithdrawn\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"FeedUpdated\",\"inputs\":[{\"name\":\"feedType\",\"type\":\"string\",\"indexed\":true,\"internalType\":\"string\"},{\"name\":\"oldAddress\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"newAddress\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"FeesCollected\",\"inputs\":[{\"name\":\"recipient\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RiskParamsUpdated\",\"inputs\":[{\"name\":\"param\",\"type\":\"string\",\"indexed\":true,\"internalType\":\"string\"},{\"name\":\"oldValue\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"newValue\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SyntheticBurned\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"priceUsed\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"collateralReleased\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SyntheticMinted\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"priceUsed\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"collateralRatio\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"EnforcedPause\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ExpectedPause\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OwnableInvalidOwner\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"OwnableUnauthorizedAccount\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"ReentrancyGuardReentrantCall\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"_usdc\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_syntheticToken\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_initialOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_feeRecipient\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"BPS_DENOMINATOR\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MAX_LIQUIDATION_BONUS_BPS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"PRICE_DECIMALS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SYNTHETIC_DECIMALS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"USDC_DECIMALS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"accumulatedFees\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"burn\",\"inputs\":[{\"name\":\"syntheticAmount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"collateralMonitor\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractICRECollateralMonitor\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"collectFees\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"depositCollateral\",\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"feeRecipient\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getAvailableCollateral\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"available\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCollateralValue\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getLatestPrice\",\"inputs\":[],\"outputs\":[{\"name\":\"price\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxMintable\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"maxMintable\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getPositionValue\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getUserCollateralRatio\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"ratio\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isLiquidatable\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"liquidatable\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"liquidate\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"repayAmount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"liquidationBonusBps\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"liquidationThreshold\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"lockedCollateral\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"minCollateralizationRatio\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"mint\",\"inputs\":[{\"name\":\"syntheticAmount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"mintFeeBps\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"priceFeed\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractICREPriceFeed\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setCollateralMonitor\",\"inputs\":[{\"name\":\"_collateralMonitor\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setFeeRecipient\",\"inputs\":[{\"name\":\"_feeRecipient\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setLiquidationBonusBps\",\"inputs\":[{\"name\":\"_liquidationBonusBps\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setLiquidationThreshold\",\"inputs\":[{\"name\":\"_liquidationThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMinCollateralizationRatio\",\"inputs\":[{\"name\":\"_minCollateralizationRatio\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMintFeeBps\",\"inputs\":[{\"name\":\"_mintFeeBps\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setPriceFeed\",\"inputs\":[{\"name\":\"_priceFeed\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setStalenessWindow\",\"inputs\":[{\"name\":\"_stalenessWindow\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"stalenessWindow\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"syntheticDebt\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"syntheticToken\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractSyntheticToken\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"totalCollateral\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"totalLockedCollateral\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"totalSyntheticDebt\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"usdc\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"withdrawCollateral\",\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"BadDebtRealized\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"shortfall\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"CollateralDeposited\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"priceAtDeposit\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"CollateralWithdrawn\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"FeedUpdated\",\"inputs\":[{\"name\":\"feedType\",\"type\":\"string\",\"indexed\":true,\"internalType\":\"string\"},{\"name\":\"oldAddress\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"newAddress\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"FeesCollected\",\"inputs\":[{\"name\":\"recipient\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Liquidated\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"liquidator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"debtRepaid\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"collateralSeized\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"priceUsed\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RiskParamsUpdated\",\"inputs\":[{\"name\":\"param\",\"type\":\"string\",\"indexed\":true,\"internalType\":\"string\"},{\"name\":\"oldValue\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"newValue\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SyntheticBurned\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"priceUsed\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"collateralReleased\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SyntheticMinted\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"priceUsed\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"collateralRatio\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"EnforcedPause\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ExpectedPause\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OwnableInvalidOwner\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"OwnableUnauthorizedAccount\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"ReentrancyGuardReentrantCall\",\"inputs\":[]}]",
 }
 
 // Structs
@@ -81,6 +81,15 @@ type GetUserCollateralRatioInput struct {
 	User common.Address
 }
 
+type IsLiquidatableInput struct {
+	User common.Address
+}
+
+type LiquidateInput struct {
+	User        common.Address
+	RepayAmount *big.Int
+}
+
 type LockedCollateralInput struct {
 	Arg0 common.Address
 }
@@ -97,6 +106,14 @@ type SetFeeRecipientInput struct {
 	FeeRecipient common.Address
 }
 
+type SetLiquidationBonusBpsInput struct {
+	LiquidationBonusBps *big.Int
+}
+
+type SetLiquidationThresholdInput struct {
+	LiquidationThreshold *big.Int
+}
+
 type SetMinCollateralizationRatioInput struct {
 	MinCollateralizationRatio *big.Int
 }
@@ -111,6 +128,10 @@ type SetPriceFeedInput struct {
 
 type SetStalenessWindowInput struct {
 	StalenessWindow *big.Int
+}
+
+type SyntheticDebtInput struct {
+	Arg0 common.Address
 }
 
 type TotalCollateralInput struct {
@@ -155,6 +176,15 @@ type ReentrancyGuardReentrantCall struct {
 // The <Event>Decoded struct will be the result of calling decode (Adapt) on the log trigger result.
 // Indexed dynamic type fields will be of type common.Hash.
 
+type BadDebtRealizedTopics struct {
+	User common.Address
+}
+
+type BadDebtRealizedDecoded struct {
+	User      common.Address
+	Shortfall *big.Int
+}
+
 type CollateralDepositedTopics struct {
 	User common.Address
 }
@@ -191,6 +221,19 @@ type FeesCollectedTopics struct {
 type FeesCollectedDecoded struct {
 	Recipient common.Address
 	Amount    *big.Int
+}
+
+type LiquidatedTopics struct {
+	User       common.Address
+	Liquidator common.Address
+}
+
+type LiquidatedDecoded struct {
+	User             common.Address
+	Liquidator       common.Address
+	DebtRepaid       *big.Int
+	CollateralSeized *big.Int
+	PriceUsed        *big.Int
 }
 
 type OwnershipTransferredTopics struct {
@@ -261,6 +304,8 @@ type SyntheticMinter struct {
 type SyntheticMinterCodec interface {
 	EncodeBPSDENOMINATORMethodCall() ([]byte, error)
 	DecodeBPSDENOMINATORMethodOutput(data []byte) (*big.Int, error)
+	EncodeMAXLIQUIDATIONBONUSBPSMethodCall() ([]byte, error)
+	DecodeMAXLIQUIDATIONBONUSBPSMethodOutput(data []byte) (*big.Int, error)
 	EncodePRICEDECIMALSMethodCall() ([]byte, error)
 	DecodePRICEDECIMALSMethodOutput(data []byte) (*big.Int, error)
 	EncodeSYNTHETICDECIMALSMethodCall() ([]byte, error)
@@ -288,6 +333,13 @@ type SyntheticMinterCodec interface {
 	DecodeGetPositionValueMethodOutput(data []byte) (*big.Int, error)
 	EncodeGetUserCollateralRatioMethodCall(in GetUserCollateralRatioInput) ([]byte, error)
 	DecodeGetUserCollateralRatioMethodOutput(data []byte) (*big.Int, error)
+	EncodeIsLiquidatableMethodCall(in IsLiquidatableInput) ([]byte, error)
+	DecodeIsLiquidatableMethodOutput(data []byte) (bool, error)
+	EncodeLiquidateMethodCall(in LiquidateInput) ([]byte, error)
+	EncodeLiquidationBonusBpsMethodCall() ([]byte, error)
+	DecodeLiquidationBonusBpsMethodOutput(data []byte) (*big.Int, error)
+	EncodeLiquidationThresholdMethodCall() ([]byte, error)
+	DecodeLiquidationThresholdMethodOutput(data []byte) (*big.Int, error)
 	EncodeLockedCollateralMethodCall(in LockedCollateralInput) ([]byte, error)
 	DecodeLockedCollateralMethodOutput(data []byte) (*big.Int, error)
 	EncodeMinCollateralizationRatioMethodCall() ([]byte, error)
@@ -305,23 +357,32 @@ type SyntheticMinterCodec interface {
 	EncodeRenounceOwnershipMethodCall() ([]byte, error)
 	EncodeSetCollateralMonitorMethodCall(in SetCollateralMonitorInput) ([]byte, error)
 	EncodeSetFeeRecipientMethodCall(in SetFeeRecipientInput) ([]byte, error)
+	EncodeSetLiquidationBonusBpsMethodCall(in SetLiquidationBonusBpsInput) ([]byte, error)
+	EncodeSetLiquidationThresholdMethodCall(in SetLiquidationThresholdInput) ([]byte, error)
 	EncodeSetMinCollateralizationRatioMethodCall(in SetMinCollateralizationRatioInput) ([]byte, error)
 	EncodeSetMintFeeBpsMethodCall(in SetMintFeeBpsInput) ([]byte, error)
 	EncodeSetPriceFeedMethodCall(in SetPriceFeedInput) ([]byte, error)
 	EncodeSetStalenessWindowMethodCall(in SetStalenessWindowInput) ([]byte, error)
 	EncodeStalenessWindowMethodCall() ([]byte, error)
 	DecodeStalenessWindowMethodOutput(data []byte) (*big.Int, error)
+	EncodeSyntheticDebtMethodCall(in SyntheticDebtInput) ([]byte, error)
+	DecodeSyntheticDebtMethodOutput(data []byte) (*big.Int, error)
 	EncodeSyntheticTokenMethodCall() ([]byte, error)
 	DecodeSyntheticTokenMethodOutput(data []byte) (common.Address, error)
 	EncodeTotalCollateralMethodCall(in TotalCollateralInput) ([]byte, error)
 	DecodeTotalCollateralMethodOutput(data []byte) (*big.Int, error)
 	EncodeTotalLockedCollateralMethodCall() ([]byte, error)
 	DecodeTotalLockedCollateralMethodOutput(data []byte) (*big.Int, error)
+	EncodeTotalSyntheticDebtMethodCall() ([]byte, error)
+	DecodeTotalSyntheticDebtMethodOutput(data []byte) (*big.Int, error)
 	EncodeTransferOwnershipMethodCall(in TransferOwnershipInput) ([]byte, error)
 	EncodeUnpauseMethodCall() ([]byte, error)
 	EncodeUsdcMethodCall() ([]byte, error)
 	DecodeUsdcMethodOutput(data []byte) (common.Address, error)
 	EncodeWithdrawCollateralMethodCall(in WithdrawCollateralInput) ([]byte, error)
+	BadDebtRealizedLogHash() []byte
+	EncodeBadDebtRealizedTopics(evt abi.Event, values []BadDebtRealizedTopics) ([]*evm.TopicValues, error)
+	DecodeBadDebtRealized(log *evm.Log) (*BadDebtRealizedDecoded, error)
 	CollateralDepositedLogHash() []byte
 	EncodeCollateralDepositedTopics(evt abi.Event, values []CollateralDepositedTopics) ([]*evm.TopicValues, error)
 	DecodeCollateralDeposited(log *evm.Log) (*CollateralDepositedDecoded, error)
@@ -334,6 +395,9 @@ type SyntheticMinterCodec interface {
 	FeesCollectedLogHash() []byte
 	EncodeFeesCollectedTopics(evt abi.Event, values []FeesCollectedTopics) ([]*evm.TopicValues, error)
 	DecodeFeesCollected(log *evm.Log) (*FeesCollectedDecoded, error)
+	LiquidatedLogHash() []byte
+	EncodeLiquidatedTopics(evt abi.Event, values []LiquidatedTopics) ([]*evm.TopicValues, error)
+	DecodeLiquidated(log *evm.Log) (*LiquidatedDecoded, error)
 	OwnershipTransferredLogHash() []byte
 	EncodeOwnershipTransferredTopics(evt abi.Event, values []OwnershipTransferredTopics) ([]*evm.TopicValues, error)
 	DecodeOwnershipTransferred(log *evm.Log) (*OwnershipTransferredDecoded, error)
@@ -394,6 +458,28 @@ func (c *Codec) EncodeBPSDENOMINATORMethodCall() ([]byte, error) {
 
 func (c *Codec) DecodeBPSDENOMINATORMethodOutput(data []byte) (*big.Int, error) {
 	vals, err := c.abi.Methods["BPS_DENOMINATOR"].Outputs.Unpack(data)
+	if err != nil {
+		return *new(*big.Int), err
+	}
+	jsonData, err := json.Marshal(vals[0])
+	if err != nil {
+		return *new(*big.Int), fmt.Errorf("failed to marshal ABI result: %w", err)
+	}
+
+	var result *big.Int
+	if err := json.Unmarshal(jsonData, &result); err != nil {
+		return *new(*big.Int), fmt.Errorf("failed to unmarshal to *big.Int: %w", err)
+	}
+
+	return result, nil
+}
+
+func (c *Codec) EncodeMAXLIQUIDATIONBONUSBPSMethodCall() ([]byte, error) {
+	return c.abi.Pack("MAX_LIQUIDATION_BONUS_BPS")
+}
+
+func (c *Codec) DecodeMAXLIQUIDATIONBONUSBPSMethodOutput(data []byte) (*big.Int, error) {
+	vals, err := c.abi.Methods["MAX_LIQUIDATION_BONUS_BPS"].Outputs.Unpack(data)
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -686,6 +772,76 @@ func (c *Codec) DecodeGetUserCollateralRatioMethodOutput(data []byte) (*big.Int,
 	return result, nil
 }
 
+func (c *Codec) EncodeIsLiquidatableMethodCall(in IsLiquidatableInput) ([]byte, error) {
+	return c.abi.Pack("isLiquidatable", in.User)
+}
+
+func (c *Codec) DecodeIsLiquidatableMethodOutput(data []byte) (bool, error) {
+	vals, err := c.abi.Methods["isLiquidatable"].Outputs.Unpack(data)
+	if err != nil {
+		return *new(bool), err
+	}
+	jsonData, err := json.Marshal(vals[0])
+	if err != nil {
+		return *new(bool), fmt.Errorf("failed to marshal ABI result: %w", err)
+	}
+
+	var result bool
+	if err := json.Unmarshal(jsonData, &result); err != nil {
+		return *new(bool), fmt.Errorf("failed to unmarshal to bool: %w", err)
+	}
+
+	return result, nil
+}
+
+func (c *Codec) EncodeLiquidateMethodCall(in LiquidateInput) ([]byte, error) {
+	return c.abi.Pack("liquidate", in.User, in.RepayAmount)
+}
+
+func (c *Codec) EncodeLiquidationBonusBpsMethodCall() ([]byte, error) {
+	return c.abi.Pack("liquidationBonusBps")
+}
+
+func (c *Codec) DecodeLiquidationBonusBpsMethodOutput(data []byte) (*big.Int, error) {
+	vals, err := c.abi.Methods["liquidationBonusBps"].Outputs.Unpack(data)
+	if err != nil {
+		return *new(*big.Int), err
+	}
+	jsonData, err := json.Marshal(vals[0])
+	if err != nil {
+		return *new(*big.Int), fmt.Errorf("failed to marshal ABI result: %w", err)
+	}
+
+	var result *big.Int
+	if err := json.Unmarshal(jsonData, &result); err != nil {
+		return *new(*big.Int), fmt.Errorf("failed to unmarshal to *big.Int: %w", err)
+	}
+
+	return result, nil
+}
+
+func (c *Codec) EncodeLiquidationThresholdMethodCall() ([]byte, error) {
+	return c.abi.Pack("liquidationThreshold")
+}
+
+func (c *Codec) DecodeLiquidationThresholdMethodOutput(data []byte) (*big.Int, error) {
+	vals, err := c.abi.Methods["liquidationThreshold"].Outputs.Unpack(data)
+	if err != nil {
+		return *new(*big.Int), err
+	}
+	jsonData, err := json.Marshal(vals[0])
+	if err != nil {
+		return *new(*big.Int), fmt.Errorf("failed to marshal ABI result: %w", err)
+	}
+
+	var result *big.Int
+	if err := json.Unmarshal(jsonData, &result); err != nil {
+		return *new(*big.Int), fmt.Errorf("failed to unmarshal to *big.Int: %w", err)
+	}
+
+	return result, nil
+}
+
 func (c *Codec) EncodeLockedCollateralMethodCall(in LockedCollateralInput) ([]byte, error) {
 	return c.abi.Pack("lockedCollateral", in.Arg0)
 }
@@ -838,6 +994,14 @@ func (c *Codec) EncodeSetFeeRecipientMethodCall(in SetFeeRecipientInput) ([]byte
 	return c.abi.Pack("setFeeRecipient", in.FeeRecipient)
 }
 
+func (c *Codec) EncodeSetLiquidationBonusBpsMethodCall(in SetLiquidationBonusBpsInput) ([]byte, error) {
+	return c.abi.Pack("setLiquidationBonusBps", in.LiquidationBonusBps)
+}
+
+func (c *Codec) EncodeSetLiquidationThresholdMethodCall(in SetLiquidationThresholdInput) ([]byte, error) {
+	return c.abi.Pack("setLiquidationThreshold", in.LiquidationThreshold)
+}
+
 func (c *Codec) EncodeSetMinCollateralizationRatioMethodCall(in SetMinCollateralizationRatioInput) ([]byte, error) {
 	return c.abi.Pack("setMinCollateralizationRatio", in.MinCollateralizationRatio)
 }
@@ -860,6 +1024,28 @@ func (c *Codec) EncodeStalenessWindowMethodCall() ([]byte, error) {
 
 func (c *Codec) DecodeStalenessWindowMethodOutput(data []byte) (*big.Int, error) {
 	vals, err := c.abi.Methods["stalenessWindow"].Outputs.Unpack(data)
+	if err != nil {
+		return *new(*big.Int), err
+	}
+	jsonData, err := json.Marshal(vals[0])
+	if err != nil {
+		return *new(*big.Int), fmt.Errorf("failed to marshal ABI result: %w", err)
+	}
+
+	var result *big.Int
+	if err := json.Unmarshal(jsonData, &result); err != nil {
+		return *new(*big.Int), fmt.Errorf("failed to unmarshal to *big.Int: %w", err)
+	}
+
+	return result, nil
+}
+
+func (c *Codec) EncodeSyntheticDebtMethodCall(in SyntheticDebtInput) ([]byte, error) {
+	return c.abi.Pack("syntheticDebt", in.Arg0)
+}
+
+func (c *Codec) DecodeSyntheticDebtMethodOutput(data []byte) (*big.Int, error) {
+	vals, err := c.abi.Methods["syntheticDebt"].Outputs.Unpack(data)
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -942,6 +1128,28 @@ func (c *Codec) DecodeTotalLockedCollateralMethodOutput(data []byte) (*big.Int, 
 	return result, nil
 }
 
+func (c *Codec) EncodeTotalSyntheticDebtMethodCall() ([]byte, error) {
+	return c.abi.Pack("totalSyntheticDebt")
+}
+
+func (c *Codec) DecodeTotalSyntheticDebtMethodOutput(data []byte) (*big.Int, error) {
+	vals, err := c.abi.Methods["totalSyntheticDebt"].Outputs.Unpack(data)
+	if err != nil {
+		return *new(*big.Int), err
+	}
+	jsonData, err := json.Marshal(vals[0])
+	if err != nil {
+		return *new(*big.Int), fmt.Errorf("failed to marshal ABI result: %w", err)
+	}
+
+	var result *big.Int
+	if err := json.Unmarshal(jsonData, &result); err != nil {
+		return *new(*big.Int), fmt.Errorf("failed to unmarshal to *big.Int: %w", err)
+	}
+
+	return result, nil
+}
+
 func (c *Codec) EncodeTransferOwnershipMethodCall(in TransferOwnershipInput) ([]byte, error) {
 	return c.abi.Pack("transferOwnership", in.NewOwner)
 }
@@ -974,6 +1182,66 @@ func (c *Codec) DecodeUsdcMethodOutput(data []byte) (common.Address, error) {
 
 func (c *Codec) EncodeWithdrawCollateralMethodCall(in WithdrawCollateralInput) ([]byte, error) {
 	return c.abi.Pack("withdrawCollateral", in.Amount)
+}
+
+func (c *Codec) BadDebtRealizedLogHash() []byte {
+	return c.abi.Events["BadDebtRealized"].ID.Bytes()
+}
+
+func (c *Codec) EncodeBadDebtRealizedTopics(
+	evt abi.Event,
+	values []BadDebtRealizedTopics,
+) ([]*evm.TopicValues, error) {
+	var userRule []interface{}
+	for _, v := range values {
+		if reflect.ValueOf(v.User).IsZero() {
+			userRule = append(userRule, common.Hash{})
+			continue
+		}
+		fieldVal, err := bindings.PrepareTopicArg(evt.Inputs[0], v.User)
+		if err != nil {
+			return nil, err
+		}
+		userRule = append(userRule, fieldVal)
+	}
+
+	rawTopics, err := abi.MakeTopics(
+		userRule,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return bindings.PrepareTopics(rawTopics, evt.ID.Bytes()), nil
+}
+
+// DecodeBadDebtRealized decodes a log into a BadDebtRealized struct.
+func (c *Codec) DecodeBadDebtRealized(log *evm.Log) (*BadDebtRealizedDecoded, error) {
+	event := new(BadDebtRealizedDecoded)
+	if err := c.abi.UnpackIntoInterface(event, "BadDebtRealized", log.Data); err != nil {
+		return nil, err
+	}
+	var indexed abi.Arguments
+	for _, arg := range c.abi.Events["BadDebtRealized"].Inputs {
+		if arg.Indexed {
+			if arg.Type.T == abi.TupleTy {
+				// abigen throws on tuple, so converting to bytes to
+				// receive back the common.Hash as is instead of error
+				arg.Type.T = abi.BytesTy
+			}
+			indexed = append(indexed, arg)
+		}
+	}
+	// Convert [][]byte → []common.Hash
+	topics := make([]common.Hash, len(log.Topics))
+	for i, t := range log.Topics {
+		topics[i] = common.BytesToHash(t)
+	}
+
+	if err := abi.ParseTopics(event, indexed, topics[1:]); err != nil {
+		return nil, err
+	}
+	return event, nil
 }
 
 func (c *Codec) CollateralDepositedLogHash() []byte {
@@ -1195,6 +1463,79 @@ func (c *Codec) DecodeFeesCollected(log *evm.Log) (*FeesCollectedDecoded, error)
 	}
 	var indexed abi.Arguments
 	for _, arg := range c.abi.Events["FeesCollected"].Inputs {
+		if arg.Indexed {
+			if arg.Type.T == abi.TupleTy {
+				// abigen throws on tuple, so converting to bytes to
+				// receive back the common.Hash as is instead of error
+				arg.Type.T = abi.BytesTy
+			}
+			indexed = append(indexed, arg)
+		}
+	}
+	// Convert [][]byte → []common.Hash
+	topics := make([]common.Hash, len(log.Topics))
+	for i, t := range log.Topics {
+		topics[i] = common.BytesToHash(t)
+	}
+
+	if err := abi.ParseTopics(event, indexed, topics[1:]); err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
+func (c *Codec) LiquidatedLogHash() []byte {
+	return c.abi.Events["Liquidated"].ID.Bytes()
+}
+
+func (c *Codec) EncodeLiquidatedTopics(
+	evt abi.Event,
+	values []LiquidatedTopics,
+) ([]*evm.TopicValues, error) {
+	var userRule []interface{}
+	for _, v := range values {
+		if reflect.ValueOf(v.User).IsZero() {
+			userRule = append(userRule, common.Hash{})
+			continue
+		}
+		fieldVal, err := bindings.PrepareTopicArg(evt.Inputs[0], v.User)
+		if err != nil {
+			return nil, err
+		}
+		userRule = append(userRule, fieldVal)
+	}
+	var liquidatorRule []interface{}
+	for _, v := range values {
+		if reflect.ValueOf(v.Liquidator).IsZero() {
+			liquidatorRule = append(liquidatorRule, common.Hash{})
+			continue
+		}
+		fieldVal, err := bindings.PrepareTopicArg(evt.Inputs[1], v.Liquidator)
+		if err != nil {
+			return nil, err
+		}
+		liquidatorRule = append(liquidatorRule, fieldVal)
+	}
+
+	rawTopics, err := abi.MakeTopics(
+		userRule,
+		liquidatorRule,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return bindings.PrepareTopics(rawTopics, evt.ID.Bytes()), nil
+}
+
+// DecodeLiquidated decodes a log into a Liquidated struct.
+func (c *Codec) DecodeLiquidated(log *evm.Log) (*LiquidatedDecoded, error) {
+	event := new(LiquidatedDecoded)
+	if err := c.abi.UnpackIntoInterface(event, "Liquidated", log.Data); err != nil {
+		return nil, err
+	}
+	var indexed abi.Arguments
+	for _, arg := range c.abi.Events["Liquidated"].Inputs {
 		if arg.Indexed {
 			if arg.Type.T == abi.TupleTy {
 				// abigen throws on tuple, so converting to bytes to
@@ -1594,6 +1935,43 @@ func (c SyntheticMinter) BPSDENOMINATOR(
 	})
 	return cre.Then(promise, func(response *evm.CallContractReply) (*big.Int, error) {
 		return c.Codec.DecodeBPSDENOMINATORMethodOutput(response.Data)
+	})
+
+}
+
+func (c SyntheticMinter) MAXLIQUIDATIONBONUSBPS(
+	runtime cre.Runtime,
+	blockNumber *big.Int,
+) cre.Promise[*big.Int] {
+	calldata, err := c.Codec.EncodeMAXLIQUIDATIONBONUSBPSMethodCall()
+	if err != nil {
+		return cre.PromiseFromResult[*big.Int](*new(*big.Int), err)
+	}
+
+	var bn cre.Promise[*pb.BigInt]
+	if blockNumber == nil {
+		promise := c.client.HeaderByNumber(runtime, &evm.HeaderByNumberRequest{
+			BlockNumber: bindings.FinalizedBlockNumber,
+		})
+
+		bn = cre.Then(promise, func(finalizedBlock *evm.HeaderByNumberReply) (*pb.BigInt, error) {
+			if finalizedBlock == nil || finalizedBlock.Header == nil {
+				return nil, errors.New("failed to get finalized block header")
+			}
+			return finalizedBlock.Header.BlockNumber, nil
+		})
+	} else {
+		bn = cre.PromiseFromResult(pb.NewBigIntFromInt(blockNumber), nil)
+	}
+
+	promise := cre.ThenPromise(bn, func(bn *pb.BigInt) cre.Promise[*evm.CallContractReply] {
+		return c.client.CallContract(runtime, &evm.CallContractRequest{
+			Call:        &evm.CallMsg{To: c.Address.Bytes(), Data: calldata},
+			BlockNumber: bn,
+		})
+	})
+	return cre.Then(promise, func(response *evm.CallContractReply) (*big.Int, error) {
+		return c.Codec.DecodeMAXLIQUIDATIONBONUSBPSMethodOutput(response.Data)
 	})
 
 }
@@ -2046,6 +2424,118 @@ func (c SyntheticMinter) GetUserCollateralRatio(
 
 }
 
+func (c SyntheticMinter) IsLiquidatable(
+	runtime cre.Runtime,
+	args IsLiquidatableInput,
+	blockNumber *big.Int,
+) cre.Promise[bool] {
+	calldata, err := c.Codec.EncodeIsLiquidatableMethodCall(args)
+	if err != nil {
+		return cre.PromiseFromResult[bool](*new(bool), err)
+	}
+
+	var bn cre.Promise[*pb.BigInt]
+	if blockNumber == nil {
+		promise := c.client.HeaderByNumber(runtime, &evm.HeaderByNumberRequest{
+			BlockNumber: bindings.FinalizedBlockNumber,
+		})
+
+		bn = cre.Then(promise, func(finalizedBlock *evm.HeaderByNumberReply) (*pb.BigInt, error) {
+			if finalizedBlock == nil || finalizedBlock.Header == nil {
+				return nil, errors.New("failed to get finalized block header")
+			}
+			return finalizedBlock.Header.BlockNumber, nil
+		})
+	} else {
+		bn = cre.PromiseFromResult(pb.NewBigIntFromInt(blockNumber), nil)
+	}
+
+	promise := cre.ThenPromise(bn, func(bn *pb.BigInt) cre.Promise[*evm.CallContractReply] {
+		return c.client.CallContract(runtime, &evm.CallContractRequest{
+			Call:        &evm.CallMsg{To: c.Address.Bytes(), Data: calldata},
+			BlockNumber: bn,
+		})
+	})
+	return cre.Then(promise, func(response *evm.CallContractReply) (bool, error) {
+		return c.Codec.DecodeIsLiquidatableMethodOutput(response.Data)
+	})
+
+}
+
+func (c SyntheticMinter) LiquidationBonusBps(
+	runtime cre.Runtime,
+	blockNumber *big.Int,
+) cre.Promise[*big.Int] {
+	calldata, err := c.Codec.EncodeLiquidationBonusBpsMethodCall()
+	if err != nil {
+		return cre.PromiseFromResult[*big.Int](*new(*big.Int), err)
+	}
+
+	var bn cre.Promise[*pb.BigInt]
+	if blockNumber == nil {
+		promise := c.client.HeaderByNumber(runtime, &evm.HeaderByNumberRequest{
+			BlockNumber: bindings.FinalizedBlockNumber,
+		})
+
+		bn = cre.Then(promise, func(finalizedBlock *evm.HeaderByNumberReply) (*pb.BigInt, error) {
+			if finalizedBlock == nil || finalizedBlock.Header == nil {
+				return nil, errors.New("failed to get finalized block header")
+			}
+			return finalizedBlock.Header.BlockNumber, nil
+		})
+	} else {
+		bn = cre.PromiseFromResult(pb.NewBigIntFromInt(blockNumber), nil)
+	}
+
+	promise := cre.ThenPromise(bn, func(bn *pb.BigInt) cre.Promise[*evm.CallContractReply] {
+		return c.client.CallContract(runtime, &evm.CallContractRequest{
+			Call:        &evm.CallMsg{To: c.Address.Bytes(), Data: calldata},
+			BlockNumber: bn,
+		})
+	})
+	return cre.Then(promise, func(response *evm.CallContractReply) (*big.Int, error) {
+		return c.Codec.DecodeLiquidationBonusBpsMethodOutput(response.Data)
+	})
+
+}
+
+func (c SyntheticMinter) LiquidationThreshold(
+	runtime cre.Runtime,
+	blockNumber *big.Int,
+) cre.Promise[*big.Int] {
+	calldata, err := c.Codec.EncodeLiquidationThresholdMethodCall()
+	if err != nil {
+		return cre.PromiseFromResult[*big.Int](*new(*big.Int), err)
+	}
+
+	var bn cre.Promise[*pb.BigInt]
+	if blockNumber == nil {
+		promise := c.client.HeaderByNumber(runtime, &evm.HeaderByNumberRequest{
+			BlockNumber: bindings.FinalizedBlockNumber,
+		})
+
+		bn = cre.Then(promise, func(finalizedBlock *evm.HeaderByNumberReply) (*pb.BigInt, error) {
+			if finalizedBlock == nil || finalizedBlock.Header == nil {
+				return nil, errors.New("failed to get finalized block header")
+			}
+			return finalizedBlock.Header.BlockNumber, nil
+		})
+	} else {
+		bn = cre.PromiseFromResult(pb.NewBigIntFromInt(blockNumber), nil)
+	}
+
+	promise := cre.ThenPromise(bn, func(bn *pb.BigInt) cre.Promise[*evm.CallContractReply] {
+		return c.client.CallContract(runtime, &evm.CallContractRequest{
+			Call:        &evm.CallMsg{To: c.Address.Bytes(), Data: calldata},
+			BlockNumber: bn,
+		})
+	})
+	return cre.Then(promise, func(response *evm.CallContractReply) (*big.Int, error) {
+		return c.Codec.DecodeLiquidationThresholdMethodOutput(response.Data)
+	})
+
+}
+
 func (c SyntheticMinter) LockedCollateral(
 	runtime cre.Runtime,
 	args LockedCollateralInput,
@@ -2306,6 +2796,44 @@ func (c SyntheticMinter) StalenessWindow(
 
 }
 
+func (c SyntheticMinter) SyntheticDebt(
+	runtime cre.Runtime,
+	args SyntheticDebtInput,
+	blockNumber *big.Int,
+) cre.Promise[*big.Int] {
+	calldata, err := c.Codec.EncodeSyntheticDebtMethodCall(args)
+	if err != nil {
+		return cre.PromiseFromResult[*big.Int](*new(*big.Int), err)
+	}
+
+	var bn cre.Promise[*pb.BigInt]
+	if blockNumber == nil {
+		promise := c.client.HeaderByNumber(runtime, &evm.HeaderByNumberRequest{
+			BlockNumber: bindings.FinalizedBlockNumber,
+		})
+
+		bn = cre.Then(promise, func(finalizedBlock *evm.HeaderByNumberReply) (*pb.BigInt, error) {
+			if finalizedBlock == nil || finalizedBlock.Header == nil {
+				return nil, errors.New("failed to get finalized block header")
+			}
+			return finalizedBlock.Header.BlockNumber, nil
+		})
+	} else {
+		bn = cre.PromiseFromResult(pb.NewBigIntFromInt(blockNumber), nil)
+	}
+
+	promise := cre.ThenPromise(bn, func(bn *pb.BigInt) cre.Promise[*evm.CallContractReply] {
+		return c.client.CallContract(runtime, &evm.CallContractRequest{
+			Call:        &evm.CallMsg{To: c.Address.Bytes(), Data: calldata},
+			BlockNumber: bn,
+		})
+	})
+	return cre.Then(promise, func(response *evm.CallContractReply) (*big.Int, error) {
+		return c.Codec.DecodeSyntheticDebtMethodOutput(response.Data)
+	})
+
+}
+
 func (c SyntheticMinter) SyntheticToken(
 	runtime cre.Runtime,
 	blockNumber *big.Int,
@@ -2414,6 +2942,43 @@ func (c SyntheticMinter) TotalLockedCollateral(
 	})
 	return cre.Then(promise, func(response *evm.CallContractReply) (*big.Int, error) {
 		return c.Codec.DecodeTotalLockedCollateralMethodOutput(response.Data)
+	})
+
+}
+
+func (c SyntheticMinter) TotalSyntheticDebt(
+	runtime cre.Runtime,
+	blockNumber *big.Int,
+) cre.Promise[*big.Int] {
+	calldata, err := c.Codec.EncodeTotalSyntheticDebtMethodCall()
+	if err != nil {
+		return cre.PromiseFromResult[*big.Int](*new(*big.Int), err)
+	}
+
+	var bn cre.Promise[*pb.BigInt]
+	if blockNumber == nil {
+		promise := c.client.HeaderByNumber(runtime, &evm.HeaderByNumberRequest{
+			BlockNumber: bindings.FinalizedBlockNumber,
+		})
+
+		bn = cre.Then(promise, func(finalizedBlock *evm.HeaderByNumberReply) (*pb.BigInt, error) {
+			if finalizedBlock == nil || finalizedBlock.Header == nil {
+				return nil, errors.New("failed to get finalized block header")
+			}
+			return finalizedBlock.Header.BlockNumber, nil
+		})
+	} else {
+		bn = cre.PromiseFromResult(pb.NewBigIntFromInt(blockNumber), nil)
+	}
+
+	promise := cre.ThenPromise(bn, func(bn *pb.BigInt) cre.Promise[*evm.CallContractReply] {
+		return c.client.CallContract(runtime, &evm.CallContractRequest{
+			Call:        &evm.CallMsg{To: c.Address.Bytes(), Data: calldata},
+			BlockNumber: bn,
+		})
+	})
+	return cre.Then(promise, func(response *evm.CallContractReply) (*big.Int, error) {
+		return c.Codec.DecodeTotalSyntheticDebtMethodOutput(response.Data)
 	})
 
 }
@@ -2591,6 +3156,62 @@ func (c *SyntheticMinter) UnpackError(data []byte) (any, error) {
 	default:
 		return nil, errors.New("unknown error selector")
 	}
+}
+
+// BadDebtRealizedTrigger wraps the raw log trigger and provides decoded BadDebtRealizedDecoded data
+type BadDebtRealizedTrigger struct {
+	cre.Trigger[*evm.Log, *evm.Log]                  // Embed the raw trigger
+	contract                        *SyntheticMinter // Keep reference for decoding
+}
+
+// Adapt method that decodes the log into BadDebtRealized data
+func (t *BadDebtRealizedTrigger) Adapt(l *evm.Log) (*bindings.DecodedLog[BadDebtRealizedDecoded], error) {
+	// Decode the log using the contract's codec
+	decoded, err := t.contract.Codec.DecodeBadDebtRealized(l)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode BadDebtRealized log: %w", err)
+	}
+
+	return &bindings.DecodedLog[BadDebtRealizedDecoded]{
+		Log:  l,        // Original log
+		Data: *decoded, // Decoded data
+	}, nil
+}
+
+func (c *SyntheticMinter) LogTriggerBadDebtRealizedLog(chainSelector uint64, confidence evm.ConfidenceLevel, filters []BadDebtRealizedTopics) (cre.Trigger[*evm.Log, *bindings.DecodedLog[BadDebtRealizedDecoded]], error) {
+	event := c.ABI.Events["BadDebtRealized"]
+	topics, err := c.Codec.EncodeBadDebtRealizedTopics(event, filters)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode topics for BadDebtRealized: %w", err)
+	}
+
+	rawTrigger := evm.LogTrigger(chainSelector, &evm.FilterLogTriggerRequest{
+		Addresses:  [][]byte{c.Address.Bytes()},
+		Topics:     topics,
+		Confidence: confidence,
+	})
+
+	return &BadDebtRealizedTrigger{
+		Trigger:  rawTrigger,
+		contract: c,
+	}, nil
+}
+
+func (c *SyntheticMinter) FilterLogsBadDebtRealized(runtime cre.Runtime, options *bindings.FilterOptions) (cre.Promise[*evm.FilterLogsReply], error) {
+	if options == nil {
+		return nil, errors.New("FilterLogs options are required.")
+	}
+	return c.client.FilterLogs(runtime, &evm.FilterLogsRequest{
+		FilterQuery: &evm.FilterQuery{
+			Addresses: [][]byte{c.Address.Bytes()},
+			Topics: []*evm.Topics{
+				{Topic: [][]byte{c.Codec.BadDebtRealizedLogHash()}},
+			},
+			BlockHash: options.BlockHash,
+			FromBlock: pb.NewBigIntFromInt(options.FromBlock),
+			ToBlock:   pb.NewBigIntFromInt(options.ToBlock),
+		},
+	}), nil
 }
 
 // CollateralDepositedTrigger wraps the raw log trigger and provides decoded CollateralDepositedDecoded data
@@ -2809,6 +3430,62 @@ func (c *SyntheticMinter) FilterLogsFeesCollected(runtime cre.Runtime, options *
 			Addresses: [][]byte{c.Address.Bytes()},
 			Topics: []*evm.Topics{
 				{Topic: [][]byte{c.Codec.FeesCollectedLogHash()}},
+			},
+			BlockHash: options.BlockHash,
+			FromBlock: pb.NewBigIntFromInt(options.FromBlock),
+			ToBlock:   pb.NewBigIntFromInt(options.ToBlock),
+		},
+	}), nil
+}
+
+// LiquidatedTrigger wraps the raw log trigger and provides decoded LiquidatedDecoded data
+type LiquidatedTrigger struct {
+	cre.Trigger[*evm.Log, *evm.Log]                  // Embed the raw trigger
+	contract                        *SyntheticMinter // Keep reference for decoding
+}
+
+// Adapt method that decodes the log into Liquidated data
+func (t *LiquidatedTrigger) Adapt(l *evm.Log) (*bindings.DecodedLog[LiquidatedDecoded], error) {
+	// Decode the log using the contract's codec
+	decoded, err := t.contract.Codec.DecodeLiquidated(l)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode Liquidated log: %w", err)
+	}
+
+	return &bindings.DecodedLog[LiquidatedDecoded]{
+		Log:  l,        // Original log
+		Data: *decoded, // Decoded data
+	}, nil
+}
+
+func (c *SyntheticMinter) LogTriggerLiquidatedLog(chainSelector uint64, confidence evm.ConfidenceLevel, filters []LiquidatedTopics) (cre.Trigger[*evm.Log, *bindings.DecodedLog[LiquidatedDecoded]], error) {
+	event := c.ABI.Events["Liquidated"]
+	topics, err := c.Codec.EncodeLiquidatedTopics(event, filters)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode topics for Liquidated: %w", err)
+	}
+
+	rawTrigger := evm.LogTrigger(chainSelector, &evm.FilterLogTriggerRequest{
+		Addresses:  [][]byte{c.Address.Bytes()},
+		Topics:     topics,
+		Confidence: confidence,
+	})
+
+	return &LiquidatedTrigger{
+		Trigger:  rawTrigger,
+		contract: c,
+	}, nil
+}
+
+func (c *SyntheticMinter) FilterLogsLiquidated(runtime cre.Runtime, options *bindings.FilterOptions) (cre.Promise[*evm.FilterLogsReply], error) {
+	if options == nil {
+		return nil, errors.New("FilterLogs options are required.")
+	}
+	return c.client.FilterLogs(runtime, &evm.FilterLogsRequest{
+		FilterQuery: &evm.FilterQuery{
+			Addresses: [][]byte{c.Address.Bytes()},
+			Topics: []*evm.Topics{
+				{Topic: [][]byte{c.Codec.LiquidatedLogHash()}},
 			},
 			BlockHash: options.BlockHash,
 			FromBlock: pb.NewBigIntFromInt(options.FromBlock),

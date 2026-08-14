@@ -8,7 +8,7 @@
 
 A demonstration of integrating AWS serverless infrastructure with the Chainlink Runtime Environment (CRE) to power a tokenized fund protocol. Users deposit USDC as collateral to mint tokens that track the price of an S&P 500 ETF (sSPY), with real-time pricing sourced from public stock APIs.
 
-Here, **synthetic** means the sSPY token tracks the *price* of the S&P 500 via an on-chain oracle rather than being backed by actual shares. The fund's value is replicated with USDC collateral instead of holding the underlying basket.
+Here, **synthetic** means the sSPY token tracks the *price* of the S&P 500 via an on-chain oracle rather than being backed by actual shares. sSPY is minted against USDC collateral (150% minimum). Burning sSPY unlocks collateral in proportion to the debt repaid — burn all of it and you reclaim exactly the USDC you locked. As SPY rises your position's collateral ratio falls, and a position can be **liquidated** if it drops below the liquidation threshold (default 120%).
 
 ## Contents
 

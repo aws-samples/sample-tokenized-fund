@@ -2,6 +2,16 @@
 
 Solidity contracts for minting synthetic ETF tokens (sSPY) backed by USDC collateral, with real-time pricing from CRE oracle feeds.
 
+## Economic model
+
+This is a **collateralized debt** protocol. A user deposits USDC and mints sSPY against it (150% minimum). The minted sSPY is a **debt** the user owes back to the protocol; the USDC that backs it is **locked**.
+
+- **Burning is debt repayment, not a price-based redemption.** Collateral released on burn is `lockedCollateral × amountBurned / syntheticDebt` — proportional to the debt repaid and **independent of the current SPY price**. Burn your whole debt and you reclaim exactly the USDC you locked.
+- **The SPY price drives risk, not payout.** As SPY rises, a fixed amount of locked USDC backs a more-valuable debt, so the position's collateral ratio falls.
+- **Liquidation** protects solvency: once a position's collateral ratio drops below `liquidationThreshold`, anyone can repay part/all of its debt (burning their own sSPY) and seize collateral plus a bonus.
+- **Debt is tracked separately from the sSPY token balance** (`syntheticDebt`), so transferring sSPY cannot distort collateral release. A minter who sells their sSPY must reacquire sSPY to repay and reclaim collateral.
+- Because the contract holds only minters' own USDC (no counterparty or sponsor), it never pays a minter SPY gains; doing so would consume other users' collateral. Long-SPY exposure accrues to sSPY *holders*, not minters.
+
 ## Contracts
 
 | Contract | Description |
@@ -69,7 +79,9 @@ cast call $MINTER "getMaxMintable(address)(uint256)" $DEPLOYER --rpc-url $RPC_UR
 cast call $MINTER "getUserCollateralRatio(address)(uint256)" $DEPLOYER --rpc-url $RPC_URL
 ```
 
-### Burn and Withdraw
+### Burn (repay debt) and Withdraw
+
+Burning repays your sSPY debt and unlocks collateral proportional to the debt repaid (you must hold the sSPY you burn):
 
 ```bash
 cast send $MINTER "burn(uint256)" 500000000000000000 \
@@ -77,6 +89,21 @@ cast send $MINTER "burn(uint256)" 500000000000000000 \
 cast send $MINTER "withdrawCollateral(uint256)" 500000000 \
   --rpc-url $RPC_URL --private-key $PRIVATE_KEY
 ```
+
+### Liquidate an unhealthy position
+
+If a position's collateral ratio falls below `liquidationThreshold`, anyone holding sSPY can repay its debt and seize collateral plus the liquidation bonus:
+
+```bash
+# Check first — returns true when liquidatable
+cast call $MINTER "isLiquidatable(address)(bool)" $VICTIM --rpc-url $RPC_URL
+
+# Repay 0.5 sSPY of the position's debt and seize collateral + bonus
+cast send $MINTER "liquidate(address,uint256)" $VICTIM 500000000000000000 \
+  --rpc-url $RPC_URL --private-key $PRIVATE_KEY
+```
+
+Repaying the full debt closes the position and returns any collateral left after the seizure to the borrower. If the seized collateral cannot cover the repaid debt value (extreme price gap), the shortfall is surfaced via a `BadDebtRealized` event rather than hidden.
 
 ### Automated Integration Test
 
@@ -91,9 +118,19 @@ Owner-configurable:
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `minCollateralizationRatio` | 150 | Minimum CR as percentage |
-| `mintFeeBps` | 30 | Mint fee in basis points (0.3%) |
+| `minCollateralizationRatio` | 150 | Minimum CR (%) required to open/increase a position; must stay ≥ `liquidationThreshold` |
+| `liquidationThreshold` | 120 | CR (%) at/below which a position may be liquidated; must be in [100, `minCollateralizationRatio`] |
+| `liquidationBonusBps` | 1000 | Liquidator bonus in basis points (10%); capped at `MAX_LIQUIDATION_BONUS_BPS` = 3000 (30%) |
+| `mintFeeBps` | 30 | Mint fee in basis points (0.3%), charged in **USDC** on the minted notional value and deducted from the minter's collateral |
 | `stalenessWindow` | 3600 | Max oracle data age in seconds |
+
+```bash
+# Example: set liquidation threshold to 125% and bonus to 8%
+cast send $MINTER "setLiquidationThreshold(uint256)" 125 \
+  --rpc-url $RPC_URL --private-key $PRIVATE_KEY
+cast send $MINTER "setLiquidationBonusBps(uint256)" 800 \
+  --rpc-url $RPC_URL --private-key $PRIVATE_KEY
+```
 
 ```bash
 # Example: update minimum CR to 200%
