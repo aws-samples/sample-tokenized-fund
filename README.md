@@ -1,4 +1,4 @@
-# Tokenized Fund on AWS with Chainlink CRE
+# Tokenized Funds on AWS with Chainlink CRE
 
 **Authored by: Simon Goldberg and David Dornseifer**
 
